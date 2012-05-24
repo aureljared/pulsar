@@ -2725,11 +2725,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	ret = wait_event_interruptible(binder_user_error_wait, binder_stop_on_user_error < 2);
 	if (ret)
-	{
-		printk(KERN_ERR "binder_ioctl wait_event_interruptible() ERROR: ret=%d \n",ret);
-		return ret;
-	}
-	mutex_lock(&binder_lock);
+
 		goto err_unlocked;
 
 	binder_lock(__func__);
