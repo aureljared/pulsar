@@ -38,7 +38,7 @@
 
 #include "../../../arch/arm/mach-tegra/tegra_pmqos.h"
 
-#define MTP_BULK_BUFFER_SIZE       16384
+#define MTP_BULK_BUFFER_SIZE       131072
 #define INTR_BUFFER_SIZE           28
 
 /* String IDs */
