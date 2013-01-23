@@ -269,7 +269,7 @@ static int tegra_ehci_hub_control(
 			memset(buf, 0, wLength);
 		return retval;
 	}
-
+/*
 	if(ehci_id == MODEM_EHCI_ID){
 	printk(KERN_INFO"%s: req:0x%x wV:0x%x wI:0x%x MODE:0x%x CMD:0x%x PORTSC:0x%x STS:0x%x HOSTPC1:0x%x\n",
         __func__, typeReq, wValue, wIndex,
@@ -288,7 +288,7 @@ static int tegra_ehci_hub_control(
 		readl(apb_misc + 0x81c),
 		tegra->port_resuming);
 	}
-
+*/
 	/* Do tegra phy specific actions based on the type request */
 	switch (typeReq) {
 	case GetPortStatus:
