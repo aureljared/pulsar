@@ -388,6 +388,7 @@ struct tegra_dc_out {
 
 	int power_wakeup;
 	int performance_tuning;
+
 	int video_min_bw;
 
 	int	(*enable)(void);
@@ -412,6 +413,8 @@ struct tegra_dc_out {
 #define TEGRA_DC_OUT_ONE_SHOT_MODE		(1 << 3)
 #define TEGRA_DC_OUT_N_SHOT_MODE		(1 << 4)
 #define TEGRA_DC_OUT_ONE_SHOT_LP_MODE		(1 << 5)
+#define TEGRA_DC_OUT_CMU_DISABLE		(0 << 6)
+#define TEGRA_DC_OUT_CMU_ENABLE			(1 << 6)
 
 #define TEGRA_DC_ALIGN_MSB		0
 #define TEGRA_DC_ALIGN_LSB		1
@@ -441,6 +444,24 @@ struct tegra_dc_lut {
 	u8 r[256];
 	u8 g[256];
 	u8 b[256];
+};
+
+struct tegra_dc_cmu_csc {
+	u16 krr;
+	u16 kgr;
+	u16 kbr;
+	u16 krg;
+	u16 kgg;
+	u16 kbg;
+	u16 krb;
+	u16 kgb;
+	u16 kbb;
+};
+
+struct tegra_dc_cmu {
+	u16 lut1[256];
+	struct tegra_dc_cmu_csc csc;
+	u8 lut2[960];
 };
 
 struct tegra_dc_win {
