@@ -196,14 +196,6 @@ void restoreCap(int on)
 }
 EXPORT_SYMBOL(restoreCap);
 
-unsigned int get_powersave_freq(){
-
-    if (tegra_pmqos_powersave == 1)
-        return T3_LP_MAX_FREQ;
-
-    return 0;
-}
-EXPORT_SYMBOL(get_powersave_freq);
 static struct attribute * g[] = {
 	&cpu_temp_attr.attr,
 	&power_save_attr.attr,
