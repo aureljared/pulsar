@@ -523,26 +523,6 @@ config TEGRA_MPDECISION
 	  high/low power CPU clusters automatically, corresponding to
 	  CPU frequency load.
 
-config TEGRA_AUTO_HOTPLUG
-	bool "Enable automatic CPU hot-plugging"
-	depends on HOTPLUG_CPU && CPU_FREQ && !ARCH_CPU_PROBE_RELEASE && !ARCH_TEGRA_2x_SOC && !TEGRA_MPDECISION
-	default n
-	help
-	  This option enables turning CPUs off/on and switching tegra
-	  high/low power CPU clusters automatically, corresponding to
-	  CPU frequency scaling.
-
-config BEST_TRADE_HOTPLUG
-	bool "Hotplug depends on power-performance tradeoff"
-	depends on HOTPLUG_CPU && SMP
-	default n
-	help
-	  This option enables making decision of CPU hotplug
-	  bases on the tradeoff between power vs. performance.
-	  A good trade would retain overall system performance,
-	  as well as save battery life.
-
-
 config TEGRA_MC_EARLY_ACK
 	bool "Enable early acknowledgement from mermory controller"
 	depends on ARCH_TEGRA_3x_SOC

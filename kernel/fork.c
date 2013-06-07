@@ -1116,12 +1116,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 		goto fork_out;
 
 	ftrace_graph_init_task(p);
-
-#if defined(CONFIG_BEST_TRADE_HOTPLUG)
-    /* always clean up bthp info first for new task */
-    memset(&p->bthp_tskinfo, 0, sizeof(p->bthp_tskinfo));
-#endif
-
 	rt_mutex_init_task(p);
 
 #ifdef CONFIG_PROVE_LOCKING
