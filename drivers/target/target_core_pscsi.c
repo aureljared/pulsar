@@ -1228,6 +1228,42 @@ static int pscsi_CDB_none(struct se_task *task)
 {
 	return pscsi_blk_get_request(task);
 }
+	struct scatterlist *sgl = cmd->t_data_sg;
+	u32 sgl_nents = cmd->t_data_nents;
+	enum dma_data_direction data_direction = cmd->data_direction;
+	struct pscsi_dev_virt *pdv = PSCSI_DEV(cmd->se_dev);
+	struct pscsi_plugin_task *pt;
+	struct request *req;
+	struct bio *hbio;
+	sense_reason_t ret;
+
+	/*
+	 * Dynamically alloc cdb space, since it may be larger than
+	 * TCM_MAX_COMMAND_SIZE
+	 */
+	pt = kzalloc(sizeof(*pt) + scsi_command_size(cmd->t_task_cdb), GFP_KERNEL);
+	if (!pt) {
+		return TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
+	}
+	cmd->priv = pt;
+
+	memcpy(pt->pscsi_cdb, cmd->t_task_cdb,
+		scsi_command_size(cmd->t_task_cdb));
+
+	if (!sgl) {
+		req = blk_get_request(pdv->pdv_sd->request_queue,
+				(data_direction == DMA_TO_DEVICE),
+				GFP_KERNEL);
+		if (!req || IS_ERR(req)) {
+			pr_err("PSCSI: blk_get_request() failed: %ld\n",
+					req ? IS_ERR(req) : -ENOMEM);
+			ret = TCM_LOGICAL_UNIT_COMMUNICATION_FAILURE;
+			goto fail;
+		}
+
+		blk_rq_set_block_pc(req);
+	} else {
+		BUG_ON(!cmd->data_length);
 
 /*	pscsi_get_cdb():
  *
@@ -1247,6 +1283,17 @@ static unsigned char *pscsi_get_cdb(struct se_task *task)
 static unsigned char *pscsi_get_sense_buffer(struct se_task *task)
 {
 	struct pscsi_plugin_task *pt = PSCSI_TASK(task);
+	req->end_io = pscsi_req_done;
+	req->end_io_data = cmd;
+	req->cmd_len = scsi_command_size(pt->pscsi_cdb);
+	req->cmd = &pt->pscsi_cdb[0];
+	req->sense = &pt->pscsi_sense[0];
+	req->sense_len = 0;
+	if (pdv->pdv_sd->type == TYPE_DISK)
+		req->timeout = PS_TIMEOUT_DISK;
+	else
+		req->timeout = PS_TIMEOUT_OTHER;
+	req->retries = PS_RETRY;
 
 	return (unsigned char *)&pt->pscsi_sense[0];
 }
