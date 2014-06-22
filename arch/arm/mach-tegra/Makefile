@@ -80,7 +80,6 @@ obj-y                                   += headsmp.o
 obj-y                                   += reset.o
 obj-$(CONFIG_TEGRA_SYSTEM_DMA)          += dma.o
 obj-$(CONFIG_CPU_FREQ)                  += cpu-tegra.o
-obj-$(CONFIG_INTELLI_PLUG)              += intelli_plug.o
 obj-$(CONFIG_ARCH_TEGRA_3x_SOC)         += tegra_rq_stats.o
 ifeq ($(CONFIG_TEGRA_AUTO_HOTPLUG),y)
 obj-$(CONFIG_ARCH_TEGRA_3x_SOC)         += cpu-tegra3.o
