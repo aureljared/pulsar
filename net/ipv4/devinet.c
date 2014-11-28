@@ -433,7 +433,19 @@ static int __inet_insert_ifa(struct in_ifaddr *ifa, struct nlmsghdr *nlh,
 	if (!ifa->ifa_local) {
 		inet_free_ifa(ifa);
 		return 0;
+
 	}
+
+	/* Enrc2b: HACK: Force netmask for rmnetX */
+	if ((!strncmp(in_dev->dev->name, "rmnet", 5))) {
+			if (ifa->ifa_prefixlen > 30) {
+				printk(KERN_DEBUG "OLDRIL: forcing prefixlen of %s from %d to 30\n",
+				in_dev->dev->name,
+				ifa->ifa_prefixlen);
+				ifa->ifa_prefixlen = 30;
+				ifa->ifa_mask = inet_make_mask(ifa->ifa_prefixlen);
+			}
+		}
 
 	ifa->ifa_flags &= ~IFA_F_SECONDARY;
 	last_primary = &in_dev->ifa_list;
@@ -1854,4 +1866,3 @@ void __init devinet_init(void)
 	rtnl_register(PF_INET, RTM_DELADDR, inet_rtm_deladdr, NULL, NULL);
 	rtnl_register(PF_INET, RTM_GETADDR, NULL, inet_dump_ifaddr, NULL);
 }
-
