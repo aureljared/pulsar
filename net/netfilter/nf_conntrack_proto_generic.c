@@ -80,7 +80,7 @@ static int packet(struct nf_conn *ct,
 static bool new(struct nf_conn *ct, const struct sk_buff *skb,
 		unsigned int dataoff)
 {
-	return nf_generic_should_process(nf_ct_protonum(ct));
+	return nf_generic_should_process(nf_ct_protonum(ct));;
 }
 
 #ifdef CONFIG_SYSCTL
