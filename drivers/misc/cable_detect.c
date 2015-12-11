@@ -28,6 +28,8 @@
 #include "../video/tegra/sii9234/TPI.h"
 #endif
 
+extern int get_ultrafast_car(void);
+
 #define MHL_INTERNAL_POWER  1
 static bool g_vbus = 0;
 static bool g_desk_no_power = 0;
@@ -119,7 +121,7 @@ static void send_cable_connect_notify(int cable_type)
 {
 	static struct t_cable_status_notifier *notifier;
 
-	CABLE_DEBUG("%s: cable_type = %d\n", __func__, cable_type);
+	CABLE_INFO("%s: cable_type = %d\n", __func__, cable_type);
 	mutex_lock(&cable_notify_sem);
 
 	if (cable_type == CONNECT_TYPE_UNKNOWN)
@@ -512,14 +514,27 @@ static void cable_detect_handler(struct work_struct *w)
 #ifdef CONFIG_TEGRA_HDMI_MHL
 	if (pInfo->accessory_type == DOCK_STATE_MHL && g_bMhlProbe)
 		return;
+	CABLE_INFO("Detecting connected accessory type");
 #endif
 	if (usb_get_vbus_value() && pInfo->accessory_type != DOCK_STATE_UNDOCKED && pInfo->accessory_type != DOCK_STATE_USB_HOST) {
-		if (cable_detection_ac_only())
-			send_cable_connect_notify(CONNECT_TYPE_AC);
-		else
+		if (cable_detection_ac_only()) {
+			if (get_ultrafast_car()) {
+				if (cable_detection_car_only()) {
+					CABLE_INFO("CAR 2A ultrafast charging");
+					send_cable_connect_notify(CONNECT_TYPE_2A_AC);
+				}	else {
+					CABLE_INFO("Dock AC charging");
+					send_cable_connect_notify(CONNECT_TYPE_AC);
+				}
+			} else {
+				CABLE_INFO("Accessory AC charging");
+				send_cable_connect_notify(CONNECT_TYPE_AC);
+			}
+		} else {
+			CABLE_INFO("Accessory USB charging");
 			send_cable_connect_notify(CONNECT_TYPE_USB);
+		}
 	}
-
 	if (pInfo->accessory_type == DOCK_STATE_DESK)
 		return;
 
@@ -1092,6 +1107,22 @@ bool cable_detection_det(void)
 }
 EXPORT_SYMBOL(cable_detection_det);
 
+bool cable_detection_car_only(void)
+{
+	bool ret = 0;
+	struct cable_detect_info *pInfo = &the_cable_info;
+
+	switch (pInfo->accessory_type) {
+		case DOCK_STATE_CAR:
+			ret = 1;
+			break;
+		default:
+			break;
+	}
+	return ret;
+}
+EXPORT_SYMBOL(cable_detection_car_only);
+
 void cable_detection_queue_recovery_host_work(int time)
 {
 	struct cable_detect_info *pInfo = &the_cable_info;
@@ -1103,14 +1134,14 @@ void cable_detection_queue_recovery_host_work(int time)
 }
 EXPORT_SYMBOL(cable_detection_queue_recovery_host_work);
 
-void clear_usb_reset_wdt()
+void clear_usb_reset_wdt(void)
 {
 	struct cable_detect_info *pInfo = &the_cable_info;
 	if (pInfo->reset_en_clr_gpio > 0) {
 		if (gpio_direction_output(pInfo->reset_en_clr_gpio, 0) < 0)
-			pr_info("[CABLE] %s: GPIO RESET_EN_CLR(%d) dir NG %d\n", __func__,pInfo->reset_en_clr_gpio);
+			pr_info("[CABLE] %s: GPIO RESET_EN_CLR(%d) dir NG\n", __func__,pInfo->reset_en_clr_gpio);
 		else
-			pr_info("[CABLE] %s: GPIO RESET_EN_CLR(%d) O(L) ok %d\n", __func__,pInfo->reset_en_clr_gpio);
+			pr_info("[CABLE] %s: GPIO RESET_EN_CLR(%d) O(L) ok \n", __func__,pInfo->reset_en_clr_gpio);
 	}
 }
 void enable_usb_reset_wdt(struct work_struct *w)
@@ -1145,7 +1176,9 @@ struct platform_driver cable_detect_driver = {
 	},
 };
 
-static void usb_status_notifier_func(int cable_type) /* TBD: Not Used on AP33 */
+/* TBD: Not Used on AP33 & AP37 */
+#if 0
+static void usb_status_notifier_func(int cable_type) /* TBD: Not Used on AP33 & AP37 */
 {
 	struct cable_detect_info*pInfo = &the_cable_info;
 
@@ -1169,15 +1202,20 @@ static void usb_status_notifier_func(int cable_type) /* TBD: Not Used on AP33 */
 	pInfo->connect_type = cable_type;
 	send_cable_connect_notify(cable_type);
 }
+#endif
 
+/* TBD: Not Used on AP33 & AP37 */
+#if 0
 static struct t_usb_status_notifier usb_status_notifier = {
 	.name = "cable_detect",
 	.func = usb_status_notifier_func,
 };
+#endif
 
 static int __init cable_detect_init(void)
 {
 	the_cable_info.connect_type = CONNECT_TYPE_NONE;
+	/* TBD: Not Used on AP33 & AP37 */
 	/*usb_register_notifier(&usb_status_notifier);*/
 #if (defined(CONFIG_CABLE_DETECT_ACCESSORY) && defined(CONFIG_TEGRA_HDMI_MHL))
 	mhl_detect_register_notifier(&mhl_status_notifier);

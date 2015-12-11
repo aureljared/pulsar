@@ -874,11 +874,12 @@ config USB_ANDROID_MASS_STORAGE
 	default y
 	help
 	  Provides USB mass storage function for android gadget driver.
+
 config USB_2A_CHARGER_DETECT
 	boolean "Android 2A charger detect function"
 	depends on USB_G_ANDROID
 	help
-	  Provides 2A charger detect.
+	  Provides 2A charger detection.
 
 config USB_ANDROID_MTP
 	boolean "Android MTP function"

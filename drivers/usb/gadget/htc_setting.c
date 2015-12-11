@@ -4,6 +4,9 @@
 #include <mach/board_htc.h>
 #include <mach/usb_phy.h>
 
+extern int get_ultrafast_charge(void);
+extern int get_ultrafast_car(void);
+
 static int first_online;
 
 static struct wake_lock udc_wake_lock;
@@ -12,7 +15,7 @@ struct wake_lock udc_resume_wake_lock;
 static DEFINE_MUTEX(notify_sem);
 
 static void update_wake_lock(int status);
-static void ac_detect_expired(unsigned long _data);
+/* static void ac_detect_expired(unsigned long _data); */
 static void usb_prepare(struct tegra_udc *udc);
 static void charger_detect(struct tegra_udc *udc);
 
@@ -89,26 +92,27 @@ static void charger_detect(struct tegra_udc *udc)
 
 #if defined(CONFIG_CABLE_DETECT_ACCESSORY)
 	if (udc->connect_type == CONNECT_TYPE_INTERNAL) {
-		USB_INFO("%s: internrl, return\n", __func__);
+		USB_INFO("%s: internal, return\n", __func__);
 		return;
 	}
-
 	if (ret != PORTSCX_LINE_STATUS_BITS && !cable_detection_ac_only())
 #else
 	if (ret != PORTSCX_LINE_STATUS_BITS)
 #endif
 	{
-		USB_INFO("Charger :USB [portsc:%x]\n", portsc);
+		USB_INFO("Charger :USB [portsc:%x] [ret:%x]\n", portsc, ret);
 		udc->connect_type = CONNECT_TYPE_UNKNOWN;
-		queue_delayed_work(udc->usb_wq, &udc->chg_work,
-			DELAY_FOR_CHECK_CHG);
-		queue_delayed_work(system_nrt_wq, &udc->ac_detect_work, 3 * HZ);
+		queue_delayed_work(udc->usb_wq, &udc->chg_work, DELAY_FOR_CHECK_CHG);
+		if (first_online) {
+ 			queue_delayed_work(system_nrt_wq, &udc->ac_detect_work, 6 * HZ);
+ 			first_online = 0;
+ 		} else
+ 			queue_delayed_work(system_nrt_wq, &udc->ac_detect_work, 3 * HZ);
 	} else {
-		USB_INFO("Charger :AC [portsc:%x]\n", portsc);
+		USB_INFO("Charger :AC [portsc:%x] [ret:%x]\n", portsc, ret);
 		udc->connect_type = CONNECT_TYPE_AC;
 		queue_work(udc->usb_wq, &udc->notifier_work);
 	}
-
 }
 
 static void check_charger(struct work_struct *w)
@@ -140,8 +144,13 @@ static void ac_detect_expired_work(struct work_struct *w)
 	if (udc->connect_type == CONNECT_TYPE_USB || udc->ac_detect_count >= 3)
 		return;
 #if defined(CONFIG_CABLE_DETECT_ACCESSORY)
-	if (cable_detection_det() || cable_detection_ac_only())
-		return;
+	if (get_ultrafast_car()) {
+		if (cable_detection_det() || (cable_detection_ac_only() && cable_detection_car_only()))
+			return;
+	} else {
+		if (cable_detection_det() || cable_detection_ac_only())
+			return;
+	}
 #endif
 	/* detect shorted D+/D-, indicating AC power */
 	portsc = udc_readl(udc, PORTSCX_REG_OFFSET);
@@ -155,13 +164,28 @@ static void ac_detect_expired_work(struct work_struct *w)
 		/* detect delay: 3 sec, 5 sec, 10 sec */
 		if (udc->ac_detect_count == 1)
 			delay = 5 * HZ;
-		else if (udc->ac_detect_count == 2)
-			delay = 10 * HZ;
-
+		else if (udc->ac_detect_count == 2) {
+			if (get_ultrafast_charge()) {
+				USB_INFO("USB -> 2A AC charger ret(%d) [portsc:%x] [ret:%x]\n", ret == PORTSCX_LINE_STATUS_BITS, portsc, ret);
+				udc->connect_type = CONNECT_TYPE_2A_AC;
+				queue_work(udc->usb_wq, &udc->notifier_work);
+			} else
+				delay = 10 * HZ;
+		}
 		queue_delayed_work(system_nrt_wq, &udc->ac_detect_work, delay);
 	} else {
-		USB_INFO("USB -> AC charger ret(%d)\n", ret == PORTSCX_LINE_STATUS_BITS);
-		udc->connect_type = CONNECT_TYPE_AC;
+		if (get_ultrafast_car()) {
+			if (cable_detection_car_only()) {
+				USB_INFO("USB -> 2A AC CAR_DOCK charger ret(%d) [portsc:%x] [ret:%x]\n", ret == PORTSCX_LINE_STATUS_BITS, portsc, ret);
+				udc->connect_type = CONNECT_TYPE_2A_AC;
+			} else {
+				USB_INFO("USB -> AC charger ret(%d) [portsc:%x] [ret:%x]\n", ret == PORTSCX_LINE_STATUS_BITS, portsc, ret);
+				udc->connect_type = CONNECT_TYPE_AC;
+			}
+		} else {
+			USB_INFO("USB -> AC charger ret(%d) [portsc:%x] [ret:%x]\n", ret == PORTSCX_LINE_STATUS_BITS, portsc, ret);
+			udc->connect_type = CONNECT_TYPE_AC;
+		}
 		queue_work(udc->usb_wq, &udc->notifier_work);
 		udc->ac_detect_count = 0;
 	}
@@ -198,6 +222,7 @@ static void usb_prepare(struct tegra_udc *udc)
 	wake_lock_init(&udc_resume_wake_lock, WAKE_LOCK_SUSPEND, "usb_udc_resume_lock");
 
 	udc->ac_detect_count = 0;
+	first_online = 1;
 
 #if defined(CONFIG_CABLE_DETECT_ACCESSORY)
 	cable_detect_register_notifier(&cable_status_notifier);

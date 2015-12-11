@@ -176,5 +176,6 @@ extern void cable_set_uart_switch(int);
 /*extern irqreturn_t cable_detection_vbus_irq_handler(void);*/ /* VBUS IRQ */
 extern bool cable_detection_ac_only(void);
 extern bool cable_detection_det(void);
+extern bool cable_detection_car_only(void);
 extern void cable_detection_queue_vbus_work(int time);
 #endif /* _CABLE_DETECTION_H */

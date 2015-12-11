@@ -467,15 +467,15 @@ LIMIT_CHARGING_FILENODE_FUNC(medialink, LIMIT_CHARGING_MEDIALINK)
 LIMIT_CHARGING_FILENODE_FUNC(data_encryption, LIMIT_CHARGING_DATA_ENCRYPTION)
 
 static struct device_attribute htc_battery_attrs[] = {
-	HTC_BATTERY_ATTR(batt_id),
-	HTC_BATTERY_ATTR(batt_vol),
-	HTC_BATTERY_ATTR(batt_temp),
-	HTC_BATTERY_ATTR(batt_current),
-	HTC_BATTERY_ATTR(charging_source),
-	HTC_BATTERY_ATTR(charging_enabled),
-	HTC_BATTERY_ATTR(full_bat),
-	HTC_BATTERY_ATTR(over_vchg),
-	HTC_BATTERY_ATTR(batt_state),
+	HTC_BATTERY_ATTR(batt_id),						/* Battery ID from ADC */
+	HTC_BATTERY_ATTR(batt_vol),						/* Battery voltage from ADC */
+	HTC_BATTERY_ATTR(batt_temp),					/* Battery Temperature (C)corrected value from formula and ADC */
+	HTC_BATTERY_ATTR(batt_current),				/* Battery current from ADC */
+	HTC_BATTERY_ATTR(charging_source),		/* 0: no cable, 1:usb, 2:AC */
+	HTC_BATTERY_ATTR(charging_enabled),		/* 0: Disable, 1: Enable */
+	HTC_BATTERY_ATTR(full_bat),						/* Full capacity of battery (mAh) */
+	HTC_BATTERY_ATTR(over_vchg),					/* 1: battery charging with higher voltage */
+	HTC_BATTERY_ATTR(batt_state),					/* 0: battey info is not ready */
 
 	__ATTR(batt_attr_text, S_IRUGO, htc_battery_show_batt_attr, NULL),
 	__ATTR(batt_power_meter, S_IRUGO, htc_battery_show_batt_power_meter, NULL),
@@ -815,6 +815,9 @@ int htc_battery_core_update(void)
 			is_send_usb_uevent = 1;
 		if (CHARGER_AC <= battery_core_info.rep.charging_source ||
 			CHARGER_AC <= new_batt_info_rep.charging_source)
+			is_send_ac_uevent = 1;
+		if (CHARGER_2A_AC <= battery_core_info.rep.charging_source ||
+			CHARGER_2A_AC <= new_batt_info_rep.charging_source)
 			is_send_ac_uevent = 1;
 	}
 	if ((!is_send_batt_uevent) &&
