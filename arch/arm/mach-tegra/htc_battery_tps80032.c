@@ -144,6 +144,19 @@ static int fast_charge = 1;
 static int fast_charge = 0;
 #endif
 
+#ifdef CONFIG_USB_2A_CHARGER_DETECT
+static int ultrafast_charge = 1;
+#else
+static int ultrafast_charge = 0;
+#endif
+
+#ifdef CONFIG_2A_CABLE_DETECT_CAR
+static int ultrafast_car = 1;
+#else
+static int ultrafast_car = 0;
+#endif
+
+
 #if WK_MBAT_IN
 static int is_mbat_in;
 #endif
@@ -370,6 +383,11 @@ static void tps80032_int_notifier_func(int int_reg, int value)
 				tps80032_charger_set_ctrl(POWER_SUPPLY_ENABLE_FAST_CHARGE);
 				htc_batt_info.ac_8hour_count++;
 				wake_unlock(&htc_batt_info.vbus_wake_lock);
+			} else if (htc_batt_info.rep.charging_source == CHARGER_2A_AC) {
+				wake_lock(&htc_batt_info.vbus_wake_lock);
+				tps80032_charger_set_ctrl(POWER_SUPPLY_ENABLE_FAST_HV_CHARGE);
+				htc_batt_info.ac_8hour_count++;
+				wake_unlock(&htc_batt_info.vbus_wake_lock);
 			}
 		} else
 			watchdog_timeout_func();
@@ -379,6 +397,23 @@ static void tps80032_int_notifier_func(int int_reg, int value)
 	}
 
 }
+
+int get_ultrafast_charge(void)
+{
+	if (!ultrafast_charge)
+		return 0;
+	return ultrafast_charge;
+}
+EXPORT_SYMBOL(get_ultrafast_charge);
+
+int get_ultrafast_car(void)
+{
+	if (!ultrafast_car)
+		return 0;
+	return ultrafast_car;
+}
+EXPORT_SYMBOL(get_ultrafast_car);
+
 
 static int batt_alarm_config(unsigned long threshold)
 {
@@ -509,6 +544,12 @@ static void reevaluate_charger(void)
 	} else {
 		if (fast_charge) {
 			BATT_LOG("Reevaluate: fast_charge is set to force AC charging");
+			if (get_ultrafast_car()) {
+				if ((htc_batt_info.rep.charging_source == CHARGER_USB || htc_batt_info.rep.charging_source == CHARGER_AC) && cable_detection_car_only()) {
+					BATT_LOG("Reevaluate: CAR MODE 2A ultrafast charging");
+					htc_batt_info.rep.charging_source = CHARGER_2A_AC;
+				}
+			}
 			if (htc_batt_info.rep.charging_source == CHARGER_USB) {
 				BATT_LOG("Reevaluate: USB > AC charging");
 				htc_batt_info.rep.charging_source = CHARGER_AC;
@@ -530,6 +571,10 @@ static void reevaluate_charger(void)
 		wake_lock(&htc_batt_info.vbus_wake_lock);
 		tps80032_charger_set_ctrl(POWER_SUPPLY_ENABLE_FAST_CHARGE);
 		wake_unlock(&htc_batt_info.vbus_wake_lock);
+	} else if (htc_batt_info.rep.charging_source == CHARGER_2A_AC) {
+		wake_lock(&htc_batt_info.vbus_wake_lock);
+		tps80032_charger_set_ctrl(POWER_SUPPLY_ENABLE_FAST_HV_CHARGE);
+		wake_unlock(&htc_batt_info.vbus_wake_lock);
 	}
 }
 
@@ -542,9 +587,10 @@ static void usb_status_notifier_func(int online)
 	CHECK_LOG();
 
 	if (online == htc_batt_info.online) {
-		BATT_LOG("%s: charger type (%u) same return.",
+		BATT_LOG("%s: charger type (%u) same reconfiguring.",
 			__func__, online);
-		return;
+		/* when redetection by ac_detect_expired, charger mode should be reconfigured!
+		return; */
 	}
 
 	mutex_lock(&htc_batt_info.info_lock);
@@ -558,16 +604,26 @@ static void usb_status_notifier_func(int online)
 			BATT_LOG("Debug flag is set to force AC charging, fake as AC");
 			htc_batt_info.rep.charging_source = CHARGER_AC;
 		} else {
-			if(fast_charge){
+			if (fast_charge) {
 				BATT_LOG("fast_charge is set to force AC charging");
 				htc_batt_info.rep.charging_source = CHARGER_AC;
-		} else
-			htc_batt_info.rep.charging_source = CHARGER_USB;
+			if (get_ultrafast_car()) {
+					if (cable_detection_car_only()) {
+						BATT_LOG("CAR MODE 2A fast_charge");
+						htc_batt_info.rep.charging_source = CHARGER_2A_AC;
+					}
+				}
+			} else
+				htc_batt_info.rep.charging_source = CHARGER_USB;
 		}
 		break;
 	case CONNECT_TYPE_AC:
 		BATT_LOG("cable AC");
 		htc_batt_info.rep.charging_source = CHARGER_AC;
+		break;
+	case CONNECT_TYPE_2A_AC:
+		BATT_LOG("cable 2A AC");
+		htc_batt_info.rep.charging_source = CHARGER_2A_AC;
 		break;
 	case CONNECT_TYPE_UNKNOWN:
 		BATT_ERR("unknown cable");
@@ -597,14 +653,31 @@ static void usb_status_notifier_func(int online)
 	/* redetect charger & set charger_mode */
 	reevaluate_charger();
 
-	/* Notify the kernel & htcbatt daemon of the current charger mode */
-	htc_batt_timer.charger_flag = (unsigned int)htc_batt_info.rep.charging_source;
-	scnprintf(message, 16, "CHG_SOURCE=%d", htc_batt_info.rep.charging_source);
-
-	update_wake_lock(htc_batt_info.rep.charging_source);
-	mutex_unlock(&htc_batt_info.info_lock);
-
-	kobject_uevent_env(&htc_batt_info.batt_cable_kobj, KOBJ_CHANGE, envp);
+	/* Notify the kernel of the current charger mode */
+	/* set AC mode in userspace to enable AC charger when 2A mode */
+	/*  (htcbatt does not know about 2A charger source) */
+	if (htc_batt_info.rep.charging_source == CHARGER_2A_AC) {
+		htc_batt_info.rep.charging_source = CHARGER_AC;
+		htc_batt_timer.charger_flag = (unsigned int)htc_batt_info.rep.charging_source;
+		scnprintf(message, 16, "CHG_SOURCE=%d", htc_batt_info.rep.charging_source);
+		update_wake_lock(htc_batt_info.rep.charging_source);
+		mutex_unlock(&htc_batt_info.info_lock);
+		kobject_uevent_env(&htc_batt_info.batt_cable_kobj, KOBJ_CHANGE, envp);
+		msleep(30); /* delay to let ioctl detect the charger change */
+		mutex_lock(&htc_batt_info.info_lock);
+		htc_batt_info.rep.charging_source = CHARGER_2A_AC;
+		htc_batt_timer.charger_flag = (unsigned int)htc_batt_info.rep.charging_source;
+		scnprintf(message, 16, "CHG_SOURCE=%d", htc_batt_info.rep.charging_source);
+		update_wake_lock(htc_batt_info.rep.charging_source);
+		mutex_unlock(&htc_batt_info.info_lock);
+		kobject_uevent_env(&htc_batt_info.batt_cable_kobj, KOBJ_CHANGE, envp);
+	} else {
+		htc_batt_timer.charger_flag = (unsigned int)htc_batt_info.rep.charging_source;
+		scnprintf(message, 16, "CHG_SOURCE=%d", htc_batt_info.rep.charging_source);
+		update_wake_lock(htc_batt_info.rep.charging_source);
+		mutex_unlock(&htc_batt_info.info_lock);
+		kobject_uevent_env(&htc_batt_info.batt_cable_kobj, KOBJ_CHANGE, envp);
+	}
 }
 
 static int htc_battery_set_charging(int ctl)
@@ -832,6 +905,9 @@ static int htc_batt_open(struct inode *inode, struct file *filp)
 
 	BATT_LOG("%s: open misc device driver.", __func__);
 	spin_lock(&htc_batt_info.batt_lock);
+
+	/* set battery capacity to 2040 mAh */
+	htc_batt_info.rep.full_bat = 2040000;
 
 	if (!htc_batt_info.first_level_ready) {
 		ret = -EBUSY;
@@ -1330,7 +1406,9 @@ static long htc_batt_ioctl(struct file *filp,
 			break;
 		}
 		BATT_LOG("do charger control = %u", charger_mode);
-		htc_battery_set_charging(charger_mode);
+		/* Don't set AC mode as this is done by reevaluate now */
+		if (charger_mode != CHARGER_AC)
+			htc_battery_set_charging(charger_mode);
 		break;
 	}
 	case HTC_BATT_IOCTL_UPDATE_BATT_INFO: {
@@ -1854,6 +1932,59 @@ static ssize_t fast_charge_store(struct device *dev,
 	return size;
 }
 
+static ssize_t ultrafast_charge_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", ultrafast_charge);
+}
+
+static ssize_t ultrafast_charge_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	int value;
+
+	value = ((int) simple_strtoul(buf, NULL, 10));
+	if (value == 0 || value == 1) {
+		if (ultrafast_charge != value) {
+			ultrafast_charge = value;
+			BATT_LOG("set ultrafast_charge %d", ultrafast_charge);
+			/* only reevaluate_charger if connected */
+			if (htc_batt_info.online != CONNECT_TYPE_NONE && htc_batt_info.online != CONNECT_TYPE_INTERNAL)
+				reevaluate_charger();
+		}
+	}
+	else
+		return -EINVAL;
+
+	return size;
+}
+
+static ssize_t ultrafast_car_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", ultrafast_car);
+}
+
+static ssize_t ultrafast_car_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	int value;
+
+	value = ((int) simple_strtoul(buf, NULL, 10));
+	if (value == 0 || value == 1) {
+		if (ultrafast_car != value) {
+			ultrafast_car = value;
+			BATT_LOG("set ultrafast_car %d", ultrafast_car);
+			/* only reevaluate_charger if connected */
+			if (htc_batt_info.online != CONNECT_TYPE_NONE && htc_batt_info.online != CONNECT_TYPE_INTERNAL)
+				reevaluate_charger();
+		}
+	}
+	else
+		return -EINVAL;
+
+	return size;
+}
 
 static struct device_attribute tps80032_batt_attrs[] = {
 	__ATTR(reboot_level, S_IRUGO, tps80032_batt_show_attributes, NULL),
@@ -1867,6 +1998,8 @@ static struct device_attribute tps80032_batt_attrs[] = {
 	__ATTR(suspend_1_percent, S_IRUGO, tps80032_batt_show_attributes, NULL),
 	__ATTR(eoc_stop, S_IWUSR, NULL, tps80032_notify_eoc_stop_attributes),
 	__ATTR(fast_charge, S_IRUGO|S_IWUGO, fast_charge_show, fast_charge_store),
+	__ATTR(ultrafast_charge, S_IRUGO|S_IWUGO, ultrafast_charge_show, ultrafast_charge_store),
+	__ATTR(ultrafast_car, S_IRUGO|S_IWUGO, ultrafast_car_show, ultrafast_car_store),
 	};
 
 static ssize_t tps80032_batt_show_attributes(struct device *dev,
