@@ -271,7 +271,7 @@ static void check_vbus_in(struct work_struct *w)
 
 				if (cancel_delayed_work_sync(&pInfo->dock_work)) {
 					if (pInfo->dock_pin_state == 0)
-						set_irq_type(pInfo->dockpin_irq,
+						irq_set_irq_type(pInfo->dockpin_irq,
 							IRQF_TRIGGER_LOW);
 				}
 				if (pInfo->accessory_type == DOCK_STATE_DESK) {
@@ -796,9 +796,9 @@ static void dock_isr_work(struct work_struct *w)
 	pInfo->dock_pin_state = gpio_get_value(pInfo->dock_pin_gpio);
 
 	if (pInfo->dock_pin_state == 1)
-		set_irq_type(pInfo->dockpin_irq, IRQF_TRIGGER_LOW);
+		irq_set_irq_type(pInfo->dockpin_irq, IRQF_TRIGGER_LOW);
 	else
-		set_irq_type(pInfo->dockpin_irq, IRQF_TRIGGER_HIGH);
+		irq_set_irq_type(pInfo->dockpin_irq, IRQF_TRIGGER_HIGH);
 
 	queue_delayed_work(pInfo->cable_detect_wq, &pInfo->dock_work, DOCK_DET_DELAY);
 	enable_irq(pInfo->dockpin_irq);
@@ -819,7 +819,7 @@ static void dock_detect_work(struct work_struct *w)
 	if (value == 0 && g_vbus) {
 		if (pInfo->accessory_type == DOCK_STATE_DESK)
 			return;
-		set_irq_type(pInfo->dockpin_irq, IRQF_TRIGGER_HIGH);
+		irq_set_irq_type(pInfo->dockpin_irq, IRQF_TRIGGER_HIGH);
 		switch_set_state(&dock_switch, DOCK_STATE_DESK);
 		pInfo->accessory_type = DOCK_STATE_DESK;
 		CABLE_INFO("dock: set state %d\n", DOCK_STATE_DESK);
@@ -827,7 +827,7 @@ static void dock_detect_work(struct work_struct *w)
 	else {
 		if (pInfo->accessory_type == DOCK_STATE_UNDOCKED)
 			return;
-		set_irq_type(pInfo->dockpin_irq, IRQF_TRIGGER_LOW);
+		irq_set_irq_type(pInfo->dockpin_irq, IRQF_TRIGGER_LOW);
 		switch_set_state(&dock_switch, DOCK_STATE_UNDOCKED);
 		pInfo->accessory_type = DOCK_STATE_UNDOCKED;
 		CABLE_INFO("dock: set state %d\n", DOCK_STATE_UNDOCKED);
