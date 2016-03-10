@@ -81,23 +81,20 @@ echo "
 "
 echo "Building version pulsar-enrc2b-$fn"
 
-# compile kernel
-echo "[*] Readying environment"
+# clean code tree
+echo "[*] Preparing environment"
 cd /Volumes/enrc2b/kernel
 mk clean && mk mrproper
 mk "$defconfig"
 
 # menuconfig
 if [[ $interactive == 1 ]]; then
-	echo -n "[*] Modify kernel config? [y/n]: "
-	read -n 1 menuconf
 	echo ""
-	if [[ $menuconf == "y" ]]; then
-		echo ""
-		make menuconfig
-		echo ""
-	fi
+	make menuconfig
+	echo ""
 fi
+
+# compile
 echo "[*] Compiling Linux kernel with $threads threads"
 mk HOSTCFLAGS="-I/Volumes/enrc2b/elfutils/libelf"
 
@@ -134,13 +131,6 @@ if [[ $interactive == 1 ]]; then
 fi
 
 # done
-echo -n "[*] Enter a version number: "
-read ver
-if [[ "$ver" == "" ]]; then
-	fn=
-else
-	fn="$ver-$curDate"
-fi
 echo -e "[*] Making \"pulsar-enrc2b-$fn.zip\""
 cd ../out
 ./zipper "$fn"
