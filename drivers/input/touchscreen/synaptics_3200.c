@@ -149,7 +149,7 @@ extern int get_tamper_sf(void);
 /***
  *  S2W free swipe and stroke variables
  */
- #define S2W_TAG "[sweep2wake]: "
+ #define S2W_TAG "[S2W]: "
 // beyond this threshold the panel will not register to apps
 static unsigned int s2w_register_threshold = 9;
 // power will toggle at this distance from start point
@@ -158,7 +158,7 @@ static unsigned int s2w_min_distance = 325;
 static bool s2w_allow_stroke = true;
 
 // double tap to wake
-static bool s2w_allow_double_tap = false;
+static bool s2w_allow_double_tap = true;
 // minimal duration between taps to be recognized
 static unsigned int s2w_double_tap_duration = 150; /* msecs */
 // maximal duration between taps to be recognized
@@ -170,7 +170,7 @@ static unsigned int s2w_double_tap_barrier_y = 1300;
 // should the I2C sleep command be used on resume
 static bool s2w_resume_tweak_enabled = true;
 
-static bool s2w_pocket_detect = true; 
+static bool s2w_pocket_detect = false; 
 
 static bool s2w_switch = true;
 static bool scr_suspended = false;
