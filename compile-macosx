@@ -1,7 +1,8 @@
 #!/bin/bash
 curDate=$(date +"%Y%m%d")
 startT=$(date +%s)
-threads=$(sysctl -n hw.ncpu)
+#threads=$(sysctl -n hw.ncpu)
+threads=8
 
 if [[ "$1" == "" ]]; then
 	mk(){
@@ -122,7 +123,7 @@ elapsedM=$((diffS/60))
 elapsedS=$((diffS-(elapsedM*60)))
 echo -n "[*] Done. Build took $elapsedM minutes, $elapsedS seconds. "
 if [[ $quiet == 1 ]]; then
-	echo -e "\n[*]View log at /Volumes/enrc2b/logs/build-$curDate.log.\n"
+	echo -e "\n[*] View log at /Volumes/enrc2b/logs/build-$curDate.log.\n"
 else
 	echo -e "\n"
 fi

@@ -99,6 +99,10 @@ extern bool is_resume_from_deep_suspend(void);
 #include <media/rawchip/rawchip.h>
 #include <media/rawchip/Yushan_HTC_Functions.h>
 
+#ifdef CONFIG_SERIAL_TEGRA_BRCM_LPM
+#include <linux/bcm_bt_lpm.h>
+#endif
+
 static struct balanced_throttle throttle_list[] = {
 	{
 		.id = BALANCED_THROTTLE_ID_TJ,
@@ -224,8 +228,8 @@ static struct led_i2c_config lp5521_led_config[] = {
 	},
 	{
 		.name = "button-backlight",
-		.led_cur = 95,
-		.led_lux = 55,
+		.led_cur = 2,
+		.led_lux = 25,
 	},
 };
 static struct led_i2c_platform_data led_data = {
@@ -743,12 +747,34 @@ static void enrc2b_i2c_init(void)
 #endif
 }
 
+#ifdef CONFIG_SERIAL_TEGRA_BRCM
+#ifdef CONFIG_SERIAL_TEGRA_BRCM_LPM
+static struct bcm_bt_lpm_platform_data bcm_bt_lpm_pdata = {
+	.gpio_wake = ENRC2B_GPIO_BT_WAKE,
+	.gpio_host_wake = ENRC2B_GPIO_BT_HOST_WAKE,
+	.request_lpm_off_locked = tegra_lpm_off_locked,
+	.request_lpm_on_locked = tegra_lpm_on_locked,
+};
+
+struct platform_device bcm_bt_lpm_device = {
+	.name = "bcm_bt_lpm",
+	.id = 0,
+	.dev = {
+		.platform_data = &bcm_bt_lpm_pdata,
+	},
+};
+#endif
+#endif
+
 static struct platform_device *enrc2b_uart_devices[] __initdata = {
 	&tegra_uarta_device,
 	&tegra_uartb_device,
 	&tegra_uartc_device,
 	&tegra_uartd_device,
 	&tegra_uarte_device,
+#ifdef CONFIG_SERIAL_TEGRA_BRCM_LPM
+    &bcm_bt_lpm_device,
+#endif
 };
 
 static struct uart_clk_parent uart_parent_clk[] = {
@@ -831,6 +857,9 @@ static void __init enrc2b_uart_init(void)
 #ifdef CONFIG_SERIAL_TEGRA_BRCM
 	enrc2b_brcm_uart_pdata = enrc2b_uart_pdata;
 	enrc2b_brcm_uart_pdata.bt_wakeup_pin_supported = 1;
+#ifdef CONFIG_SERIAL_TEGRA_BRCM_LPM
+	enrc2b_brcm_uart_pdata.exit_lpm_cb = bcm_bt_lpm_exit_lpm;
+#endif
 	enrc2b_brcm_uart_pdata.bt_wakeup_pin = ENRC2B_GPIO_BT_WAKE;
 	enrc2b_brcm_uart_pdata.host_wakeup_pin = ENRC2B_GPIO_BT_HOST_WAKE;
 	tegra_uartc_device.dev.platform_data = &enrc2b_brcm_uart_pdata;
@@ -1692,7 +1721,7 @@ static struct android_usb_platform_data android_usb_pdata = {
 	.fserial_init_string = "tty,tty:autobot,tty:serial,tty:autobot",
 	.usb_id_pin_gpio = TEGRA_GPIO_PU5,
 	.RndisDisableMPDecision = true,
-	.nluns = 1,
+	.nluns = 2,
 	.support_modem = false,
 };
 
@@ -2219,8 +2248,8 @@ static int mistouch_gpio_active() {
 
 static struct gpio_keys_button ENRC2_PROJECT_keys[] = {
 	[0] = GPIO_KEY(KEY_POWER, PU6, 1),
-	[1] = GPIO_KEY(KEY_VOLUMEUP, PI6, 0),
-	[2] = GPIO_KEY(KEY_VOLUMEDOWN, PW3, 0),
+	[1] = GPIO_KEY(KEY_VOLUMEUP, PI6, 1),
+	[2] = GPIO_KEY(KEY_VOLUMEDOWN, PW3, 1),
  };
 
 static struct gpio_keys_platform_data ENRC2_PROJECT_keys_platform_data = {

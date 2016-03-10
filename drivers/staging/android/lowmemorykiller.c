@@ -40,6 +40,7 @@
 #include <linux/swap.h>
 #include <linux/rcupdate.h>
 #include <linux/notifier.h>
+#include <linux/compaction.h>
 
 static uint32_t lowmem_debug_level = 1;
 static int lowmem_adj[6] = {
@@ -58,6 +59,8 @@ static int lowmem_minfree[6] = {
 static int lowmem_minfree_size = 4;
 
 static unsigned long lowmem_deathpending_timeout;
+
+extern int compact_nodes();
 
 #define lowmem_print(level, x...)			\
 	do {						\
@@ -168,6 +171,8 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 	lowmem_print(4, "lowmem_shrink %lu, %x, return %d\n",
 		     sc->nr_to_scan, sc->gfp_mask, rem);
 	rcu_read_unlock();
+	if (selected)
+		compact_nodes(false);
 	return rem;
 }
 
@@ -283,3 +288,4 @@ module_init(lowmem_init);
 module_exit(lowmem_exit);
 
 MODULE_LICENSE("GPL");
+

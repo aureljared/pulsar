@@ -2048,15 +2048,16 @@ err_free_ps_input_device:
 
 int power_key_check_in_pocket(void)
 {
-	if(plsensor_chip_state) /*pl-sensor no ack */
-		return 0;
-
 	struct cm3629_info *lpi = lp_info;
 	int ls_dark;
 
 	uint32_t ls_adc = 0;
 	int ls_level = 0;
 	int i;
+
+	if(plsensor_chip_state) /*pl-sensor no ack */
+		return 0;
+
 	pocket_mode_flag = 1;
 	D("[cm3629] %s +++\n", __func__);
 	/* get p-sensor status */
@@ -2085,6 +2086,24 @@ int power_key_check_in_pocket(void)
 	pocket_mode_flag = 0;
 	return (ls_dark && ps_near);
 
+}
+
+int pocket_detection_check(void)
+{
+	struct cm3629_info *lpi = lp_info;
+
+	if(plsensor_chip_state) { /*pl-sensor no ack */
+		printk("[cm3629] %s return by cm3629 probe fail\n", __func__);
+		return 0;
+	}
+	pocket_mode_flag = 1;
+
+	psensor_enable(lpi);
+	D("[cm3629] %s ps_near = %d\n", __func__, ps_near);
+	psensor_disable(lpi);
+
+	pocket_mode_flag = 0;
+	return (ps_near);
 }
 
 int psensor_enable_by_touch_driver(int on)

@@ -38,6 +38,10 @@
 #include <linux/spi-tegra.h>
 #include <linux/pm_qos_params.h>
 
+#include <linux/cpufreq.h>
+#include "../arch/arm/mach-tegra/tegra_pmqos.h"
+
+
 #undef LOG_TAG
 #define LOG_TAG "AUD"
 
@@ -59,6 +63,30 @@
 #endif
 
 #define AUD_CPU_FREQ_MIN 102000
+static unsigned int audio_min_freq = AUD_CPU_FREQ_MIN;
+
+static int audio_min_freq_set(const char *arg, const struct kernel_param *kp)
+{
+	unsigned int tmp;
+
+	if (1 != sscanf(arg, "%u", &tmp))
+		return -EINVAL;
+		
+	audio_min_freq = tmp;
+    pr_info("audio_min_freq %u\n", audio_min_freq);
+   	return 0;
+}
+
+static int audio_min_freq_get(char *buffer, const struct kernel_param *kp)
+{
+	return param_get_uint(buffer, kp);
+}
+
+static struct kernel_param_ops audio_min_freq_ops = {
+	.set = audio_min_freq_set,
+	.get = audio_min_freq_get,
+};
+module_param_cb(audio_min_freq, &audio_min_freq_ops, &audio_min_freq, 0644);
 
 /* for quattro --- */
 int64_t pwr_up_time;
@@ -417,17 +445,30 @@ void aic3008_votecpuminfreq(bool bflag)
     boldCPUMinReq = bflag;
     if (bflag)
     {
-        pm_qos_update_request(&aud_cpu_minfreq_req, (s32)AUD_CPU_FREQ_MIN);
-        AUD_INFO("VoteMinFreqS:%d", AUD_CPU_FREQ_MIN);
+		tegra_pmqos_audio = 1;
+		update_tegra_pmqos_freqs();
+        set_aud_cpu_minfreq(T3_CPU_MIN_FREQ);
+        AUD_DBG("VoteMinFreqS:%d\n", T3_CPU_MIN_FREQ);
     }
     else
     {
-        pm_qos_update_request(&aud_cpu_minfreq_req, (s32)PM_QOS_CPU_FREQ_MIN_DEFAULT_VALUE);
-        AUD_INFO("VoteMinFreqE:%d", PM_QOS_CPU_FREQ_MIN_DEFAULT_VALUE);
+		tegra_pmqos_audio = 0;
+		update_tegra_pmqos_freqs();
+        set_aud_cpu_minfreq(PM_QOS_CPU_FREQ_MIN_DEFAULT_VALUE);
+        AUD_DBG("VoteMinFreqE:%d\n", PM_QOS_CPU_FREQ_MIN_DEFAULT_VALUE);
+
     }
 
     return;
 }
+
+void set_aud_cpu_minfreq(unsigned int freq)
+{
+	pm_qos_update_request(&aud_cpu_minfreq_req, (s32)freq);
+	cpufreq_qos_cap_policy();
+}
+
+
 
 void aic3008_CodecInit()
 {
@@ -968,11 +1009,19 @@ static int aic3008_set_config(int config_tbl, int idx, int en)
 		}
 		break;
 	case AIC3008_IO_CONFIG_MEDIA:
-		if(idx == 49)
+
+        // maxwen TODO
+		if(idx == 20)
+		{
+				mutex_unlock(&lock);
+	            return rc;
+		}
+		else if(idx == 49)
 		{
 			AUD_DBG("[DSP] idx = %d, Mic Mute!!", idx);
 			if (aic3008_tx_mode == UPLINK_BT_AP ||
 				aic3008_tx_mode == UPLINK_BT_BB ){
+			    AUD_DBG("[DSP] idx = %d, BT Mic mute!!", idx);
 				aic3008_config(BT_MIC_MUTE, ARRAY_SIZE(BT_MIC_MUTE));		// mute mic
 			}
 			else{
@@ -995,6 +1044,7 @@ static int aic3008_set_config(int config_tbl, int idx, int en)
 			AUD_DBG("[DSP] idx = %d, Mic unMute!!", idx);
 			if (aic3008_tx_mode == UPLINK_BT_AP ||
 				aic3008_tx_mode == UPLINK_BT_BB ){
+			    AUD_DBG("[DSP] idx = %d, BT Mic unMute!!", idx);
 				aic3008_config(BT_MIC_UNMUTE, ARRAY_SIZE(BT_MIC_UNMUTE));		// mute mic
 			}
 			else{
@@ -1124,10 +1174,25 @@ static int aic3008_set_config(int config_tbl, int idx, int en)
 
 		/* i2s config */
 		if (aic3008_power_ctl->i2s_switch) {
+
+            // maxwen TODO
 			if (aic3008_dspindex[idx] != -1) {
+				AUD_ERR("[DSP] AIC3008_IO_CONFIG_MEDIA: dsp index %d %d\n", idx, aic3008_dspindex[idx]);
 				aic3008_power_ctl->i2s_control(aic3008_dspindex[idx]);
 			} else {
-				AUD_ERR("[DSP] AIC3008_IO_CONFIG_MEDIA: unknown dsp index %d\n", idx);
+                AUD_INFO("[DSP] AIC3008_IO_CONFIG_MEDIA: hardcoded i2s_switch\n");
+			    if (idx == 6){
+                    AUD_INFO("[DSP] AIC3008_IO_CONFIG_MEDIA: hardcoded i2s_switch %d %d\n", idx, Phone_BT);
+				    aic3008_power_ctl->i2s_control(Phone_BT);
+                } else if (idx == 1){
+                    AUD_INFO("[DSP] AIC3008_IO_CONFIG_MEDIA: hardcoded i2s_switch %d %d\n", idx, Phone_Default);
+				    aic3008_power_ctl->i2s_control(Phone_Default);
+                } else if (idx == 8){
+                    AUD_INFO("[DSP] AIC3008_IO_CONFIG_MEDIA: hardcoded i2s_switch %d %d\n", idx, Playback_Default);
+				    aic3008_power_ctl->i2s_control(Playback_Default);
+                } else {
+			    	AUD_ERR("[DSP] AIC3008_IO_CONFIG_MEDIA: unknown dsp index %d\n", idx);
+			    }
 			}
 		}
 
@@ -1151,6 +1216,7 @@ static int aic3008_set_config(int config_tbl, int idx, int en)
 		len = (((int)(aic3008_minidsp[idx][0].reg) & 0xFF) << 8) | ((int)(aic3008_minidsp[idx][0].data) & 0xFF);
 
 		t1 = ktime_to_ms(ktime_get());
+
 		/* step 1: path off first
 			Symptom:
 				If downlink wasn't path_off, it could have noise when config DSP.
@@ -1763,6 +1829,7 @@ static int __devinit aic3008_probe(struct snd_soc_codec *codec)
 {
 	AUD_INFO("aic3008_probe() start... aic3008_codec:%p", codec);
 	int ret = 0;
+    int i = 0;
 
 	struct aic3008_priv *aic3008 = snd_soc_codec_get_drvdata(codec);
 	if (!aic3008) {
@@ -1791,6 +1858,10 @@ static int __devinit aic3008_probe(struct snd_soc_codec *codec)
 		AUD_ERR("aic3008_probe() aic3008_minidsp alloc failed.");
 		goto minidsp_failed;
 	}
+
+    for (i=0; i<MINIDSP_ROW_MAX; i++){
+        aic3008_dspindex[i] = -1;
+    }
 
 	bulk_tx = kcalloc(MINIDSP_COL_MAX * 2 , sizeof(uint8_t), GFP_KERNEL);
 	if (bulk_tx == NULL) {

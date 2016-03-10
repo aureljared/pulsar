@@ -365,6 +365,8 @@ static unsigned int idletimer_tg_target(struct sk_buff *skb,
 
 	BUG_ON(!info->timer);
 
+	info->timer->active = true;
+
 	if (time_before(info->timer->timer.expires, now)) {
 		schedule_work(&info->timer->work);
 		pr_debug("Starting timer %s (Expired, Jiffies): %lu, %lu\n",
