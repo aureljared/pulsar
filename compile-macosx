@@ -1,33 +1,69 @@
 #!/bin/bash
 curDate=$(date +"%Y%m%d")
 startT=$(date +%s)
-#threads=$(sysctl -n hw.ncpu)
-threads=8
+threads=$(sysctl -n hw.ncpu)
+quiet=1
+interactive=0
+fn="$curDate"
+defconfig="enrc2b_defconfig"
 
-if [[ "$1" == "" ]]; then
-	mk(){
+showhelp() {
+	echo "Usage: $(basename $0) <option> <argument> ..."
+	echo "Options:"
+	echo "    -v            Run in verbose mode."
+	echo "    -h            Show this help message."
+	echo "    -x            Modify kernel config during build (menuconfig)."
+	echo "    -j <num>      Use <num> threads for make."
+	echo "    -r <string>   Name current release <string>."
+	echo "    -d <config>   Use <config> instead of default defconfig ($defconfig)."
+}
+
+if [[ "$@" == "" ]]; then
+	echo "Warning: running in silent mode with default settings."
+fi
+
+while getopts "vj:r:d:h" opt; do
+	case "$opt" in
+		v)
+			quiet=0
+			;;
+		j)
+			threads="$OPTARG"
+			;;
+		r)
+			fn="$OPTARG-$curDate"
+			;;
+		d)
+			defconfig="$OPTARG"
+			;;
+		h)
+			showhelp
+			exit 0
+			;;
+		x)
+			interactive=1
+			;;
+		\?)
+			echo -e "Error: Invalid option -\"$OPTARG\".\n"
+			showhelp
+			exit 1
+			;;
+		:)
+			echo -e "Error: Option -\"$OPTARG\" requires an argument.\n"
+			showhelp
+			exit 1
+			;;
+	esac
+done
+
+if [[ $quiet == 0 ]]; then
+	mk() {
+		make -j$threads "$@"
+	}
+else
+	mk() {
 		make -j$threads "$@" >> "/Volumes/enrc2b/logs/build-$curDate.log" 2>&1
 	}
-	quiet=1
-	defconfig="enrc2b_defconfig"
-else
-	if [[ "$1" == "-v" ]]; then
-		quiet=0
-		mk() {
-			make -j$threads "$@"
-		}
-		if [[ "$2" == "" ]]; then
-			defconfig="enrc2b_defconfig"
-		else
-			defconfig="$2"
-		fi
-	else
-		mk(){
-			make -j$threads "$@" >> "/Volumes/enrc2b/logs/build-$curDate.log" 2>&1
-		}
-		quiet=1
-		defconfig="$1"
-	fi
 fi
 
 echo "
@@ -43,7 +79,7 @@ echo "
 / / /        / / /____\/ //_______/\__\/\ \/___/ /  / / /_       __\ \_\/ / /  \ \ \    
 \/_/         \/_________/ \_______\/     \_____\/   \_\___\     /____/_/\/_/    \_\/    
 "
-echo "Building for enrc2b ($curDate)"
+echo "Building version pulsar-enrc2b-$fn"
 
 # compile kernel
 echo "[*] Readying environment"
@@ -52,13 +88,15 @@ mk clean && mk mrproper
 mk "$defconfig"
 
 # menuconfig
-echo -n "[*] Modify kernel config? [y/n]: "
-read -n 1 menuconf
-echo ""
-if [[ $menuconf == "y" ]]; then
+if [[ $interactive == 1 ]]; then
+	echo -n "[*] Modify kernel config? [y/n]: "
+	read -n 1 menuconf
 	echo ""
-	make menuconfig
-	echo ""
+	if [[ $menuconf == "y" ]]; then
+		echo ""
+		make menuconfig
+		echo ""
+	fi
 fi
 echo "[*] Compiling Linux kernel with $threads threads"
 mk HOSTCFLAGS="-I/Volumes/enrc2b/elfutils/libelf"
@@ -88,7 +126,7 @@ cd ../
 
 # save modified defconfig if necessary
 cd ../kernel
-if [[ $menuconf == "y" ]]; then
+if [[ $interactive == 1 ]]; then
 	echo "[*] Copying modified defconfig"
 	mk savedefconfig
 	cp -f ./defconfig arch/arm/configs/enrc2b_defconfig
