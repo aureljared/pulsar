@@ -1,15 +1,27 @@
 #!/bin/sh
 # Check ncurses compatibility
 
+# Check if Mac
+if [[ "$(uname)" == "Darwin" ]]; then
+	darwin=1
+fi
+
 # What library to link
 ldflags()
 {
 	for ext in so a dylib ; do
 		for lib in ncursesw ncurses curses ; do
-			$cc -print-file-name=lib${lib}.${ext} | grep -q /
-			if [ $? -eq 0 ]; then
-				echo "-l${lib}"
-				exit
+			if [ $darwin -eq 1 ]; then
+				if [ -f /usr/lib/lib${lib}.${ext} ]; then
+					echo "-l${lib}"
+					exit
+				fi
+			else
+				$cc -print-file-name=lib${lib}.${ext} | grep -q /
+				if [ $? -eq 0 ]; then
+					echo "-l${lib}"
+					exit
+				fi
 			fi
 		done
 	done

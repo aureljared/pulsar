@@ -1,0 +1,129 @@
+#!/bin/bash
+curDate=$(date +"%Y%m%d")
+startT=$(date +%s)
+threads=$(sysctl -n hw.ncpu)
+
+if [[ "$1" == "" ]]; then
+	mk(){
+		make -j$threads "$@" >> "/Volumes/enrc2b/logs/build-$curDate.log" 2>&1
+	}
+	quiet=1
+	defconfig="enrc2b_defconfig"
+else
+	if [[ "$1" == "-v" ]]; then
+		quiet=0
+		mk() {
+			make -j$threads "$@"
+		}
+		if [[ "$2" == "" ]]; then
+			defconfig="enrc2b_defconfig"
+		else
+			defconfig="$2"
+		fi
+	else
+		mk(){
+			make -j$threads "$@" >> "/Volumes/enrc2b/logs/build-$curDate.log" 2>&1
+		}
+		quiet=1
+		defconfig="$1"
+	fi
+fi
+
+echo "
+         _      _                  _            _            _                   _      
+        /\ \   /\_\               _\ \         / /\         / /\                /\ \    
+       /  \ \ / / /         _    /\__ \       / /  \       / /  \              /  \ \   
+      / /\ \ \\ \ \__      /\_\ / /_ \_\     / / /\ \__   / / /\ \            / /\ \ \  
+     / / /\ \_\\ \___\    / / // / /\/_/    / / /\ \___\ / / /\ \ \          / / /\ \_\ 
+    / / /_/ / / \__  /   / / // / /         \ \ \ \/___// / /  \ \ \        / / /_/ / / 
+   / / /__\/ /  / / /   / / // / /           \ \ \     / / /___/ /\ \      / / /__\/ /  
+  / / /_____/  / / /   / / // / / ____   _    \ \ \   / / /_____/ /\ \    / / /_____/   
+ / / /        / / /___/ / // /_/_/ ___/\/_/\__/ / /  / /_________/\ \ \  / / /\ \ \     
+/ / /        / / /____\/ //_______/\__\/\ \/___/ /  / / /_       __\ \_\/ / /  \ \ \    
+\/_/         \/_________/ \_______\/     \_____\/   \_\___\     /____/_/\/_/    \_\/    
+"
+echo "Building for enrc2b ($curDate)"
+
+# compile kernel
+echo "[*] Readying environment"
+cd /Volumes/enrc2b/kernel
+mk clean && mk mrproper
+mk "$defconfig"
+
+# menuconfig
+echo -n "[*] Modify kernel config? [y/n]: "
+read -n 1 menuconf
+echo ""
+if [[ $menuconf == "y" ]]; then
+	echo ""
+	make menuconfig
+	echo ""
+fi
+echo "[*] Compiling Linux kernel with $threads threads"
+mk HOSTCFLAGS="-I/Volumes/enrc2b/elfutils/libelf"
+
+if [[ ! -e "arch/arm/boot/zImage" ]]; then
+	echo -e "\n[*] Error, zImage not built! Cleaning up."
+	mk clean && mk mrproper
+	if [[ $quiet == 1 ]]; then
+		echo "[*] View log at /Volumes/enrc2b/build-$curDate.log."
+	fi
+	exit 1
+fi
+
+# copy modules
+echo "[*] Copying modules to temporary folder"
+find drivers -type f -name '*.ko' -exec cp -f {} ../out/modules \;
+find arch -type f -name '*.ko' -exec cp -f {} ../out/modules \;
+find fs -type f -name '*.ko' -exec cp -f {} ../out/modules \;
+
+# copy zImage
+echo "[*] Making new boot.img"
+cp -f arch/arm/boot/zImage ../out/tmp/zImage
+cd ../out/tmp
+mkbootimg --base 0 --pagesize 2048 --kernel_offset 0x10008000 --ramdisk_offset 0x11000000 --second_offset 0x10f00000 --tags_offset 0x10000100 --kernel zImage --ramdisk ramdisk.cpio.gz -o boot.img
+mv boot.img ../boot.img
+cd ../
+
+# save modified defconfig if necessary
+cd ../kernel
+if [[ $menuconf == "y" ]]; then
+	echo "[*] Copying modified defconfig"
+	mk savedefconfig
+	cp -f ./defconfig arch/arm/configs/enrc2b_defconfig
+	rm -f ./defconfig
+fi
+
+# done
+echo -n "[*] Enter a version number: "
+read ver
+if [[ "$ver" == "" ]]; then
+	fn=
+else
+	fn="$ver-$curDate"
+fi
+echo -e "[*] Making \"pulsar-enrc2b-$fn.zip\""
+cd ../out
+./zipper "$fn"
+
+# cleanup
+echo "[*] Cleaning up"
+cd ../kernel
+mk clean && mk mrproper
+cd ../
+rm -f out/modules/*
+rm -f out/tmp/zImage
+rm -f out/boot.img
+
+# Done
+endT=$(date +%s)
+diffS=$((endT-startT))
+elapsedM=$((diffS/60))
+elapsedS=$((diffS-(elapsedM*60)))
+echo -n "[*] Done. Build took $elapsedM minutes, $elapsedS seconds. "
+if [[ $quiet == 1 ]]; then
+	echo -e "\n[*]View log at /Volumes/enrc2b/logs/build-$curDate.log.\n"
+else
+	echo -e "\n"
+fi
+exit
