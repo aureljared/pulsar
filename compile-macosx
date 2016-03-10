@@ -22,7 +22,7 @@ if [[ "$@" == "" ]]; then
 	echo "Warning: running in silent mode with default settings."
 fi
 
-while getopts "vj:r:d:h" opt; do
+while getopts "vj:r:d:hx" opt; do
 	case "$opt" in
 		v)
 			quiet=0
@@ -61,8 +61,12 @@ if [[ $quiet == 0 ]]; then
 		make -j$threads "$@"
 	}
 else
+	logFile="/Volumes/enrc2b/logs/build-$curDate.log"
+	if [[ -e "$logFile" ]]; then
+		echo "" > "$logFile"
+	fi
 	mk() {
-		make -j$threads "$@" >> "/Volumes/enrc2b/logs/build-$curDate.log" 2>&1
+		make -j$threads "$@" >> $logFile 2>&1
 	}
 fi
 

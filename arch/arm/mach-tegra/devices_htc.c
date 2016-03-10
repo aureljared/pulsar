@@ -1067,6 +1067,12 @@ static int __cpuinit debug_cpu_toggle_notify(struct notifier_block *self,
 		unsigned long action, void *hcpu)
 {
 	MF_DEBUG("00UP0007");
+	switch (action) {
+	case CPU_ONLINE:
+	case CPU_DEAD:
+		pr_info("[CPUHP] current online: %d%d%d%d\n",
+				cpu_online(0), cpu_online(1), cpu_online(2), cpu_online(3));
+	}
 	return NOTIFY_OK;
 }
 static int __init htc_debug_cpu_toggle_init(void)

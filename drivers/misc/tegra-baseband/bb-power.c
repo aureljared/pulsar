@@ -71,6 +71,9 @@ static int tegra_bb_power_gpio_init(struct tegra_bb_power_gdata *gdata)
 		else
 			gpio_direction_output(gpio_id, (!gpio_flags ? 0 : 1));
 
+		/* Enable the gpio */
+		tegra_gpio_enable(gpio_id);
+
 		/* Create a sysfs node, if requested */
 		if (gpiolist->doexport)
 			gpio_export(gpio_id, false);
@@ -118,11 +121,9 @@ static int tegra_bb_power_gpio_deinit(struct tegra_bb_power_gdata *gdata)
 	gpioirq = gdata->gpioirq;
 	for (; gpioirq->id != GPIO_INVALID; ++gpioirq) {
 
-	if (gpioirq->handler != NULL)
-        /* Free the irq */
+		/* Free the irq */
 		free_irq(gpio_to_irq(gpioirq->id), gpioirq->cookie);
 	}
-
 	return 0;
 }
 
@@ -286,11 +287,6 @@ static int tegra_bb_power_remove(struct platform_device *device)
 	return 0;
 }
 
-static void tegra_bb_power_shutdown(struct platform_device *device)
-{
-	tegra_bb_power_remove(device);
-}
-
 #ifdef CONFIG_PM
 static int tegra_bb_power_suspend(struct platform_device *device,
 	pm_message_t state)
@@ -313,7 +309,6 @@ static int tegra_bb_power_resume(struct platform_device *device)
 static struct platform_driver tegra_bb_power_driver = {
 	.probe = tegra_bb_power_probe,
 	.remove = tegra_bb_power_remove,
-	.shutdown = tegra_bb_power_shutdown,
 #ifdef CONFIG_PM
 	.suspend = tegra_bb_power_suspend,
 	.resume = tegra_bb_power_resume,

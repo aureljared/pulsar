@@ -245,7 +245,7 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -pipe
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer
 HOSTCXXFLAGS = -O2 -ffast-math -pipe -march=armv7-a -mfpu=neon
 
 # Decide whether to build built-in, modular, or both.
@@ -351,8 +351,7 @@ MODFLAGS	= -DMODULE -Os -ffast-math -pipe -march=armv7-a -mfpu=neon -ftree-vecto
 CFLAGS_MODULE   = $(MODFLAGS)
 AFLAGS_MODULE   = $(MODFLAGS)
 LDFLAGS_MODULE  =
-CFLAGS_KERNEL	= -O2 -mtune=cortex-a9 -ftree-vectorize -ffast-math -fsingle-precision-constant \
-           -march=armv7-a -mfpu=neon -mvectorize-with-neon-quad -fsched-spec-load -pipe
+CFLAGS_KERNEL	= -mtune=cortex-a9 -ftree-vectorize -ffast-math -fsingle-precision-constant -march=armv7-a -mfpu=neon -mvectorize-with-neon-quad -ffast-math -fsched-spec-load -pipe
 AFLAGS_KERNEL	= $(CFLAGS_KERNEL)
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 

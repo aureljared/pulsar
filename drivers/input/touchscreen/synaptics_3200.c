@@ -149,7 +149,7 @@ extern int get_tamper_sf(void);
 /***
  *  S2W free swipe and stroke variables
  */
- #define S2W_TAG "[S2W]: "
+ #define S2W_TAG "[sweep2wake]: "
 // beyond this threshold the panel will not register to apps
 static unsigned int s2w_register_threshold = 9;
 // power will toggle at this distance from start point
@@ -158,12 +158,12 @@ static unsigned int s2w_min_distance = 325;
 static bool s2w_allow_stroke = true;
 
 // double tap to wake
-static bool s2w_allow_double_tap = true;
+static bool s2w_allow_double_tap = false;
 // minimal duration between taps to be recognized
 static unsigned int s2w_double_tap_duration = 150; /* msecs */
 // maximal duration between taps to be recognized
 // max = s2w_double_tap_duration + s2w_double_tap_threshold
-static unsigned int s2w_double_tap_threshold = 500;  /* msecs */
+static unsigned int s2w_double_tap_threshold = 300;  /* msecs */
 static cputime64_t s2w_double_tap_start = 0;
 // screen y barrier below that touch events will be recognized
 static unsigned int s2w_double_tap_barrier_y = 1300;
@@ -197,7 +197,7 @@ static void sweep2wake_presspwr(struct work_struct * sweep2wake_presspwr_work) {
 	if (!mutex_trylock(&pwrkeyworklock))
         return;
 
-	pr_info(S2W_TAG "emulate power key press. mode = %d", mode);
+	pr_info(S2W_TAG "mode=%d", mode);
 
 	input_event(sweep2wake_pwrdev, EV_KEY, KEY_POWER, 1);
 	input_event(sweep2wake_pwrdev, EV_SYN, 0, 0);
@@ -391,7 +391,7 @@ static int i2c_syn_error_handler(struct synaptics_ts_data *ts, uint8_t reset, ch
 	if (reason && fun_name)
 		printk(KERN_INFO "[TP] TOUCH_ERR: I2C Error: %s:%s, reset = %d\n", fun_name, reason, reset);
 	else
-		printk(KERN_INFO "[TP] %s: reason and fun_name can't be null. I2C Error: %s:%s, reset = %d\n", __func__, fun_name, reason, reset);
+		printk(KERN_INFO "[TP] %s: rason and fun_name can't be null\n", __func__);
 
 	return -EIO;
 }
