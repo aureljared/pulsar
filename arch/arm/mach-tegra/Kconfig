@@ -520,7 +520,7 @@ config TEGRA_CLUSTER_CONTROL
 config TEGRA_CPUQUIET
 	bool "Use cpuquiet"
 	depends on HOTPLUG_CPU && CPU_FREQ && !ARCH_CPU_PROBE_RELEASE && !ARCH_TEGRA_2x_SOC
-    select TEGRA_AUTO_HOTPLUG
+	default y if TEGRA_MPDECISION
 
 config TEGRA_MPDECISION
     bool "Enable better automatic CPU hot-plugging"
