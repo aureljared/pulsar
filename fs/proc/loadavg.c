@@ -21,7 +21,7 @@ static int loadavg_proc_show(struct seq_file *m, void *v)
 		LOAD_INT(avnrun[1]), LOAD_FRAC(avnrun[1]),
 		LOAD_INT(avnrun[2]), LOAD_FRAC(avnrun[2]),
 		nr_running(), nr_threads,
-		task_active_pid_ns(current)->last_pid;
+		task_active_pid_ns(current)->last_pid);
 	return 0;
 }
 
