@@ -7254,14 +7254,11 @@ void sched_show_task(struct task_struct *p)
 
 	cputime_t utime, stime;
 	task_times(p, &utime, &stime);
-
-#ifdef CONFIG_DEBUG_KERNEL
 	printk(KERN_CONT "  schedstat=( %llu %llu %lu ) utm=%lu stm=%lu\n",
 			(unsigned long long)p->se.sum_exec_runtime,
 			(unsigned long long)p->sched_info.run_delay,
 			p->sched_info.pcount, utime, stime);
-#endif
-	
+
 	show_stack(p, NULL);
 }
 
