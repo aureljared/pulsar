@@ -64,10 +64,6 @@ unsigned int T3_CPU_MIN_FREQ = DEF_T3_CPU_MIN_FREQ;
 unsigned int tegra_pmqos_powersave = 0;
 unsigned int tegra_pmqos_audio = 0;
 
-#ifdef CONFIG_TEGRA_CPUQUIET
-extern void tegra_cpuquiet_force_gmode(void);
-#endif
-
 unsigned int tegra_pmqos_boost_freq = T3_CPU_FREQ_BOOST;
 struct work_struct ril_suspend_resume_work;
 
@@ -719,10 +715,8 @@ int tegra_update_cpu_speed(unsigned long rate)
 {
 	int ret = 0;
 	struct cpufreq_freqs freqs;
-#ifndef CONFIG_TEGRA_CPUQUIET
 	unsigned long rate_save = rate;
 	int status = 1;
-#endif
 	
 	// dont allow changes while in early suspend boost mode
 	if (in_earlysuspend)
@@ -735,7 +729,6 @@ int tegra_update_cpu_speed(unsigned long rate)
 	if (!IS_ERR_VALUE(rate))
 		freqs.new = rate / 1000;
 
-#ifndef CONFIG_TEGRA_CPUQUIET
 	if (rate_save > T3_LP_MAX_FREQ) {
 		if (is_lp_cluster()) {
 #if CPU_FREQ_DEBUG			
@@ -763,7 +756,6 @@ int tegra_update_cpu_speed(unsigned long rate)
 			freqs.new = rate_save;
 		}
 	}
-#endif
 
 	if (freqs.old == freqs.new){
 		return ret;
@@ -2266,13 +2258,6 @@ int tegra_input_boost (int cpu, unsigned int target_freq)
         return -EINVAL;
     }
 
-#ifdef CONFIG_TEGRA_CPUQUIET
-	if (target_freq > T3_LP_MAX_FREQ && is_lp_cluster())
-		// disable LP mode asap
-		// must be outside tegra_cpu_lock mutex!
-		tegra_cpuquiet_force_gmode();
-#endif
-
     mutex_lock(&tegra_cpu_lock);
     
 #if CPU_FREQ_DEBUG
@@ -2304,13 +2289,6 @@ static int tegra_target(struct cpufreq_policy *policy,
 		return ret;
 
 	freq = freq_table[idx].frequency;
-	
-#ifdef CONFIG_TEGRA_CPUQUIET
-	if (target_freq > T3_LP_MAX_FREQ && is_lp_cluster())
-		// disable LP mode asap
-		// must be outside tegra_cpu_lock mutex!
-		tegra_cpuquiet_force_gmode();
-#endif
 
 	mutex_lock(&tegra_cpu_lock);
 
@@ -2497,9 +2475,6 @@ static void tegra_cpufreq_early_suspend(struct early_suspend *h)
 
 static void tegra_cpufreq_late_resume(struct early_suspend *h)
 {
-#ifdef CONFIG_TEGRA_CPUQUIET
-	tegra_cpuquiet_force_gmode();
-#endif	
 	pr_info("tegra_cpufreq_late_resume: clean cpu freq cap\n");
 	pm_qos_update_request(&cap_cpu_freq_req, (s32)PM_QOS_CPU_FREQ_MAX_DEFAULT_VALUE);
 
@@ -2537,11 +2512,6 @@ static void tegra_cpufreq_performance_late_resume(struct early_suspend *h)
 #endif
 static void ril_suspend_resume_worker(struct work_struct *w)
 {
-#ifdef CONFIG_TEGRA_CPUQUIET
-	// disable LP mode asap
-	tegra_cpuquiet_force_gmode();
-#endif
-
 	pr_info("ril_suspend_resume_worker: clean cpu cap by RIL\n");
 	pm_qos_update_request(&cap_cpu_freq_req, (s32)PM_QOS_CPU_FREQ_MAX_DEFAULT_VALUE);
 

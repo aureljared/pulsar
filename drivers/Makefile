@@ -5,7 +5,6 @@
 # Rewritten to use lists instead of if-statements.
 #
 
-obj-$(CONFIG_CPUQUIET_FRAMEWORK)+= cpuquiet/
 obj-y				+= gpio/
 obj-$(CONFIG_PCI)		+= pci/
 obj-$(CONFIG_PARISC)		+= parisc/
