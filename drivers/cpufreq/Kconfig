@@ -94,6 +94,12 @@ config CPU_FREQ_DEFAULT_GOV_SMARTMAX
 	help
 	  Use the CPUFreq governor 'smartmax' as default
 
+config CPU_FREQ_DEFAULT_GOV_SMARTMAX_EPS
+	bool "smartmax EPS"
+	select CPU_FREQ_GOV_SMARTMAX_EPS
+	help
+	  Use the CPUFreq governor 'smartmax EPS' extreme power saving as default 
+
 config CPU_FREQ_DEFAULT_GOV_CONSERVATIVE
 	bool "conservative"
 	select CPU_FREQ_GOV_CONSERVATIVE
@@ -187,12 +193,17 @@ config CPU_FREQ_GOV_ONDEMAND_2_PHASE
 	help
 	  '2-phase' - Adding a new algorithm to reduce power consumption
 
-
 config CPU_FREQ_GOV_SMARTMAX
 	tristate "'smartmax' cpufreq policy governor"
 	select CPU_FREQ_TABLE
 	help
 	  'smartmax' combined ondemand and smartass2
+
+config CPU_FREQ_GOV_SMARTMAX_EPS
+	tristate "'smartmax EPS' cpufreq policy governor"
+	select CPU_FREQ_TABLE
+	help
+	  'smartmax EPS' is the extreme powersaving version of smartmax 
 	  
 config CPU_FREQ_GOV_INTERACTIVE
 	tristate "'interactive' cpufreq policy governor"

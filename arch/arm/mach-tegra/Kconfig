@@ -222,11 +222,8 @@ config HTC_PROJECT
        select WATCHDOG
        select TEGRA_WATCHDOG
        select TEGRA_WATCHDOG_ENABLE_ON_PROBE
-       select BOOTPARAM_SOFTLOCKUP_PANIC
-       select DEBUG_MUTEXES
        select ANDROID_RAM_CONSOLE_APPEND_PMIC_STATUS_BITS
        select HTC_POWER_OFF
-       select DEBUG_CREDENTIALS
        select HTC_FIQ_DUMPER
        select TEGRA_FIQ_DEBUGGER
        select GENERIC_BUG
@@ -517,10 +514,12 @@ config TEGRA_CLUSTER_CONTROL
 	depends on ARCH_TEGRA_HAS_DUAL_CPU_CLUSTERS
 	default y if PM_SLEEP
 
-config TEGRA_CPUQUIET
-	bool "Use cpuquiet"
-	depends on HOTPLUG_CPU && CPU_FREQ && !ARCH_CPU_PROBE_RELEASE && !ARCH_TEGRA_2x_SOC
-    select TEGRA_AUTO_HOTPLUG
+config INTELLI_PLUG
+    bool "Enable intelli-plug cpu hotplug driver"
+    depends on HOTPLUG_CPU && CPU_FREQ && !TEGRA_MPDECISION
+    default n
+    help
+      Generic Intelli-plug cpu hotplug driver for ARM SOCs
     
 config TEGRA_MPDECISION
     bool "Enable better automatic CPU hot-plugging"
