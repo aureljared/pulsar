@@ -365,7 +365,7 @@ static int tegra_config_aic3008_dsp_info(struct snd_kcontrol *kcontrol,
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
 	uinfo->count = 1;
 	uinfo->value.integer.min = 0;
-	uinfo->value.integer.max = 52;
+	uinfo->value.integer.max = 65;
 	return 0;
 }
 
