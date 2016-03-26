@@ -153,7 +153,7 @@ extern int get_tamper_sf(void);
 // beyond this threshold the panel will not register to apps
 static unsigned int s2w_register_threshold = 9;
 // power will toggle at this distance from start point
-static unsigned int s2w_min_distance = 325;
+static unsigned int s2w_min_distance = 200;
 // use either direction for on/off
 static bool s2w_allow_stroke = true;
 
@@ -166,7 +166,7 @@ static unsigned int s2w_double_tap_duration = 150; /* msecs */
 static unsigned int s2w_double_tap_threshold = 300;  /* msecs */
 static cputime64_t s2w_double_tap_start = 0;
 // screen y barrier below that touch events will be recognized
-static unsigned int s2w_double_tap_barrier_y = 1300;
+static unsigned int s2w_double_tap_barrier_y = 10;
 // should the I2C sleep command be used on resume
 static bool s2w_resume_tweak_enabled = true;
 
