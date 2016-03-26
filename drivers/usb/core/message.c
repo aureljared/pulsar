@@ -1,6 +1,7 @@
 /*
  * message.c - synchronous message handling
  */
+#define DEBUG
 
 #include <linux/pci.h>	/* for scatterlist macros */
 #include <linux/usb.h>
