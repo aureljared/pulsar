@@ -710,6 +710,9 @@ static int get_data_block(struct inode *inode, sector_t iblock,
 static int get_data_block_fiemap(struct inode *inode, sector_t iblock,
 			struct buffer_head *bh_result, int create)
 {
+	/* Block number less than F2FS MAX BLOCKS */
+	if (unlikely(iblock >= max_file_size(0)))
+		return -EFBIG;
 	return __get_data_block(inode, iblock, bh_result, create, true);
 }
 
