@@ -48,7 +48,8 @@ struct usb_hub {
 //--------------------------------------------------------
 #ifdef CONFIG_HTC_QCT_9K_MDM_HSIC_PM_DBG
 	struct usb_interface *intf;
-#endif	//CONFIG_HTC_QCT_9K_MDM_HSIC_PM_DBG
+#endif	
+//CONFIG_HTC_QCT_9K_MDM_HSIC_PM_DBG
 //--------------------------------------------------------
 	struct usb_device	*hdev;
 	struct kref		kref;
@@ -1375,7 +1376,8 @@ descriptor_error:
 //--------------------------------------------------------
 #ifdef CONFIG_HTC_QCT_9K_MDM_HSIC_PM_DBG
 	hub->intf = intf;
-#endif	//CONFIG_HTC_QCT_9K_MDM_HSIC_PM_DBG
+#endif	
+//CONFIG_HTC_QCT_9K_MDM_HSIC_PM_DBG
 //--------------------------------------------------------
 	hub->hdev = hdev;
 	INIT_DELAYED_WORK(&hub->leds, led_work);
@@ -2421,7 +2423,8 @@ int usb_port_suspend(struct usb_device *udev, pm_message_t msg)
 //--------------------------------------------------------
 #ifdef CONFIG_HTC_QCT_9K_MDM_HSIC_PM_DBG
 	usb_mark_intf_last_busy(hub->intf, false);
-#endif	//CONFIG_HTC_QCT_9K_MDM_HSIC_PM_DBG
+#endif	
+//CONFIG_HTC_QCT_9K_MDM_HSIC_PM_DBG
 //--------------------------------------------------------
 	usb_mark_last_busy(hub->hdev);
 	return status;
@@ -2448,12 +2451,14 @@ static int finish_port_resume(struct usb_device *udev)
 {
 	int	status = 0;
 	u16	devstatus;
-	#ifdef CONFIG_QCT_9K_MODEM
-	extern struct usb_hcd *mdm_hsic_usb_hcd;
-	#endif //CONFIG_QCT_9K_MODEM
+#ifdef CONFIG_QCT_9K_MODEM
+//	extern struct usb_hcd *mdm_hsic_usb_hcd;
+#endif
+//CONFIG_QCT_9K_MODEM
 
 	//htc++
-	#ifdef CONFIG_QCT_9K_MODEM
+#ifdef CONFIG_QCT_9K_MODEM
+/*
 	if (machine_is_evitareul() && hcd == mdm_hsic_usb_hcd)
 	{
 		extern int get_ap2mdm_sw_bc5_status(void);
@@ -2463,7 +2468,7 @@ static int finish_port_resume(struct usb_device *udev)
 
 		if (mdm_in_fatal_handler)
 		{
-			pr_info(MODULE_NAME "%s mdm_in_fatal_handler return 0\n", __func__); /* HTC */
+			pr_info(MODULE_NAME "%s mdm_in_fatal_handler return 0\n", __func__);
 			return 0;
 		}
 
@@ -2472,7 +2477,9 @@ static int finish_port_resume(struct usb_device *udev)
 			ehci_qct_mdm_resume_suspend_recover();
 		}
 	}
-	#endif //CONFIG_QCT_9K_MODEM
+*/
+#endif
+//CONFIG_QCT_9K_MODEM
 	//htc--
 
 	/* caller owns the udev device lock */
