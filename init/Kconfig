@@ -214,6 +214,7 @@ config KERNEL_LZ4
 
 	  Its compression ratio is worse than LZO. The size of the kernel
 	  is about 8% bigger than LZO. But the decompression speed is
+	  faster than LZO.
 
 endchoice
 

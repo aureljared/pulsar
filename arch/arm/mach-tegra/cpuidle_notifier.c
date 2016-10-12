@@ -20,7 +20,7 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/cpuidle.h>
-#include <mach/cpuidle_notifier.h>"
+#include <mach/cpuidle_notifier.h>
 
 static DEFINE_PER_CPU(struct atomic_notifier_head, tegra_cpuidle_notifiers);
 
