@@ -166,7 +166,7 @@ static unsigned int s2w_double_tap_duration = 150; /* msecs */
 static unsigned int s2w_double_tap_threshold = 300;  /* msecs */
 static cputime64_t s2w_double_tap_start = 0;
 // screen y barrier below that touch events will be recognized
-static unsigned int s2w_double_tap_barrier_y = 10;
+static unsigned int s2w_double_tap_barrier_y = 0;
 // should the I2C sleep command be used on resume
 static bool s2w_resume_tweak_enabled = true;
 
