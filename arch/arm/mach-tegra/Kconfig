@@ -882,19 +882,6 @@ config TEGRA3_VARIANT_CPU_OVERCLOCK
     help
       CPU Overclocking option
 
-config 2A_CABLE_DETECT_CAR
-	tristate "UltraFast 2A charging when in CAR Dock"
-	depends on 2A_CHARGER_DETECT
-	default n
-	help
-	  Provides 2A CAR_DOCK charger configuration.
-
-config ENABLE_FAST_CHARGE
-	tristate "Enable fast charging from USB host"
-	default n
-	help
-	  forces fast AC charger mode when connected to USB source.
-
 config VOLTAGE_CONTROL
     bool "CPU voltage control"
     default n
