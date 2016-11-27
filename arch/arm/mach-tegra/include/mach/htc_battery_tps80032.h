@@ -94,9 +94,6 @@ struct batt_adc2temp {
 /* information about the system we're running on */
 extern unsigned int system_rev;
 
-extern int get_ultrafast_charge(void);
-extern int get_ultrafast_car(void);
-
 enum {
 	GUAGE_NONE,
 	GUAGE_MODEM,
