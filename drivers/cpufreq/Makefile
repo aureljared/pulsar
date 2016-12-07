@@ -18,6 +18,9 @@ obj-$(CONFIG_CPU_FREQ_GOV_SMARTMAX_EPS)		+= cpufreq_smartmax_eps.o
 obj-$(CONFIG_CPU_FREQ_GOV_PEGASUSQ)  += cpufreq_pegasusq.o
 obj-$(CONFIG_CPU_FREQ_GOV_LULZACTIVE)  += cpufreq_lulzactive.o
 obj-$(CONFIG_CPU_FREQ_GOV_TOUCHDEMAND)  += cpufreq_touchdemand.o
+obj-$(CONFIG_CPU_FREQ_GOV_BADASS)	+= cpufreq_badass.o
+obj-$(CONFIG_CPU_FREQ_GOV_WHEATLEY)	+= cpufreq_wheatley.o
+obj-$(CONFIG_CPU_FREQ_GOV_SMARTASSH3)	+= cpufreq_smartassH3.o
 
 # CPUfreq cross-arch helpers
 obj-$(CONFIG_CPU_FREQ_TABLE)		+= freq_table.o
