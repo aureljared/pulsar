@@ -2311,18 +2311,24 @@ packet_setsockopt(struct socket *sock, int level, int optname, char __user *optv
 
 		if (optlen != sizeof(val))
 			return -EINVAL;
-		if (po->rx_ring.pg_vec || po->tx_ring.pg_vec)
-			return -EBUSY;
 		if (copy_from_user(&val, optval, sizeof(val)))
 			return -EFAULT;
 		switch (val) {
 		case TPACKET_V1:
 		case TPACKET_V2:
-			po->tp_version = val;
-			return 0;
+			break;
 		default:
 			return -EINVAL;
 		}
+		lock_sock(sk);
+		if (po->rx_ring.pg_vec || po->tx_ring.pg_vec) {
+			ret = -EBUSY;
+		} else {
+			po->tp_version = val;
+			ret = 0;
+		}
+		release_sock(sk);
+		return ret;
 	}
 	case PACKET_RESERVE:
 	{
@@ -2780,6 +2786,7 @@ static int packet_set_ring(struct sock *sk, struct tpacket_req *req,
 	rb_queue = tx_ring ? &sk->sk_write_queue : &sk->sk_receive_queue;
 
 	err = -EBUSY;
+	lock_sock(sk);
 	if (!closing) {
 		if (atomic_read(&po->mapped))
 			goto out;
@@ -2835,8 +2842,6 @@ static int packet_set_ring(struct sock *sk, struct tpacket_req *req,
 			goto out;
 	}
 
-	lock_sock(sk);
-
 	/* Detach socket from network */
 	spin_lock(&po->bind_lock);
 	was_running = po->running;
@@ -2880,11 +2885,10 @@ static int packet_set_ring(struct sock *sk, struct tpacket_req *req,
 	}
 	spin_unlock(&po->bind_lock);
 
-	release_sock(sk);
-
 	if (pg_vec)
 		free_pg_vec(pg_vec, order, req->tp_block_nr);
 out:
+	release_sock(sk);
 	return err;
 }
 
