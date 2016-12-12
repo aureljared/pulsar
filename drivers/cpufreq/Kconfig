@@ -346,31 +346,23 @@ config CPU_FREQ_GOV_TOUCHDEMAND
 	  
 config CPU_FREQ_GOV_WHEATLEY
 	tristate "'wheatley' cpufreq governor"
-	depends on CPU_FREQ	  
-	  
-
-config CPU_FREQ_GOV_BADASS
-       tristate "'badass' cpufreq governor"
-       depends on CPU_FREQ
-       help
- 	 'badass' - This driver adds a dynamic cpufreq policy governor.
- 	 The governor does a periodic polling and
- 	 changes frequency based on the CPU utilization.
- 	 The support for this governor depends on CPU capability to
- 	 do fast frequency switching (i.e, very low latency frequency
- 	 transitions).
- 
- 	 If in doubt, say N.
- 	 
-
-config CPU_FREQ_GOV_SMARTASS2
-	tristate "'smartassV2' cpufreq governor"
 	depends on CPU_FREQ
 	help
-	  'smartassV2' - a "smart" optimized governor for the hero!
+	  'wheatley' - a high performance governor based on ondemand
 
-	  If in doubt, say N.
-
+config CPU_FREQ_GOV_BADASS
+    tristate "'badass' cpufreq governor"
+    depends on CPU_FREQ
+    help
+ 	  'badass' - This driver adds a dynamic cpufreq policy governor.
+ 	  The governor does a periodic polling and
+ 	  changes frequency based on the CPU utilization.
+ 	  The support for this governor depends on CPU capability to
+ 	  do fast frequency switching (i.e, very low latency frequency
+ 	  transitions).
+ 
+ 	  If in doubt, say N.
+ 	 
 config CPU_FREQ_GOV_SMARTASSH3
 	tristate "'SmartassH3' cpufreq governor"
 	depends on CPU_FREQ
