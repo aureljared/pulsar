@@ -20,6 +20,7 @@ obj-$(CONFIG_CPU_FREQ_GOV_LULZACTIVE)  += cpufreq_lulzactive.o
 obj-$(CONFIG_CPU_FREQ_GOV_TOUCHDEMAND)  += cpufreq_touchdemand.o
 obj-$(CONFIG_CPU_FREQ_GOV_BADASS)	+= cpufreq_badass.o
 obj-$(CONFIG_CPU_FREQ_GOV_WHEATLEY)	+= cpufreq_wheatley.o
+obj-$(CONFIG_CPU_FREQ_GOV_HYPER)	+= cpufreq_hyper.o
 obj-$(CONFIG_CPU_FREQ_GOV_SMARTASSH3)	+= cpufreq_smartassH3.o
 
 # CPUfreq cross-arch helpers
