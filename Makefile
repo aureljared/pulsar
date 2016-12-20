@@ -351,7 +351,7 @@ MODFLAGS	= -DMODULE -Os -ffast-math -pipe -march=armv7-a -mfpu=neon -ftree-vecto
 CFLAGS_MODULE   = $(MODFLAGS) -fno-pic
 AFLAGS_MODULE   = $(MODFLAGS)
 LDFLAGS_MODULE  =
-CFLAGS_KERNEL	= -mtune=cortex-a9 -ftree-vectorize -ffast-math -fsingle-precision-constant -march=armv7-a -mfpu=neon -mvectorize-with-neon-quad -ffast-math -fsched-spec-load -pipe
+CFLAGS_KERNEL	= -mtune=cortex-a9 -ftree-vectorize -ffast-math -fsingle-precision-constant -march=armv7-a -mfpu=neon -mvectorize-with-neon-quad -fsched-spec-load -pipe
 AFLAGS_KERNEL	= $(CFLAGS_KERNEL)
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 
@@ -368,7 +368,7 @@ KBUILD_CPPFLAGS := -D__KERNEL__
 KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
-		   -Wno-format-security \
+		   -Wno-format-security -Wno-tautological-compare \
 		   -fno-delete-null-pointer-checks
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
