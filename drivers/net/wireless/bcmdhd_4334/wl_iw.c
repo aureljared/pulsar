@@ -4620,7 +4620,7 @@ wl_iw_ioctl(
 		max_tokens = wrq->u.data.length;
 	else
 		max_tokens = IW_SCAN_MAX_DATA;
-		break;
+	break;
 #endif 
 
 	case SIOCSIWSPY:
