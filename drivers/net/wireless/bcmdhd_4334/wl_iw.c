@@ -790,8 +790,8 @@ wl_iw_set_freq(
 				fwrq->m /= 10;
 		}
 	
-	if (fwrq->m > 4000 && fwrq->m < 5000)
-		sf = WF_CHAN_FACTOR_4_G; 
+		if (fwrq->m > 4000 && fwrq->m < 5000)
+			sf = WF_CHAN_FACTOR_4_G; 
 
 		chan = wf_mhz2channel(fwrq->m, sf);
 	}
