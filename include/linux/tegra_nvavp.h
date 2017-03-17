@@ -14,7 +14,7 @@
 #include <linux/ioctl.h>
 #include <linux/types.h>
 
-#define NVAVP_MAX_RELOCATION_COUNT 64
+#define NVAVP_MAX_RELOCATION_COUNT 65
 
 /* avp submit flags */
 #define NVAVP_FLAG_NONE		0x00000000
