@@ -37,6 +37,7 @@ static struct dvfs *cpu_dvfs;
 #define CPU_MILLIVOLTS {\
 	750, 775, 825, 850, 875, 900, 916, 950, 975, 1000, 1007, 1025, 1050, 1075, 1100, 1125, 1150, 1175, 1200, 1212, 1237};
 
+static int cpu_millivolts[MAX_DVFS_FREQS] = CPU_MILLIVOLTS;
 static const int cpu_millivolts_orig[MAX_DVFS_FREQS] = CPU_MILLIVOLTS;
 
 static const unsigned int cpu_cold_offs_mhz[MAX_DVFS_FREQS] = {
@@ -237,7 +238,7 @@ static struct dvfs cpu_dvfs_table[] = {
 #define CORE_DVFS(_clk_name, _speedo_id, _auto, _mult, _freqs...)	\
 	{							\
 		.clk_name	= _clk_name,			\
-		.speedo_id	= _soc_id,			\
+		.speedo_id	= _speedo_id,			\
 		.process_id	= -1,				\
 		.freqs		= {_freqs},			\
 		.freqs_mult	= _mult,			\
