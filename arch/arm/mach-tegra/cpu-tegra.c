@@ -50,10 +50,30 @@
 #include "pm.h"
 #include "tegra_pmqos.h"
 
-/* Symbol to store resume resume */
-extern unsigned long long wake_reason_resume;
-static spinlock_t user_cap_lock;
-struct work_struct htc_suspend_resume_work;
+#ifdef CONFIG_TEGRA_MPDECISION
+/* mpdecision notifier */
+extern int mpdecision_gmode_notifier(void);
+#endif
+
+// make these vals modifiable in realtime
+unsigned int T3_CPU_MIN_FREQ = DEF_T3_CPU_MIN_FREQ;
+
+/* EliteKernel Extreme Powersaving*/
+unsigned int tegra_pmqos_powersave = 0;
+unsigned int tegra_pmqos_audio = 0;
+
+unsigned int tegra_pmqos_boost_freq = T3_CPU_FREQ_BOOST;
+struct work_struct ril_suspend_resume_work;
+
+/* frequency cap used during suspend (screen off)*/
+static unsigned int suspend_cap_freq = SUSPEND_CPU_FREQ_MAX;
+static unsigned int suspend_cap_cpu_num = SUSPEND_CPU_NUM_MAX;
+/* disable speed changes during early suspend and resume handlers */
+static bool in_earlysuspend = false;
+
+// maxwen: assumes 4 cores!
+unsigned int tegra_pmqos_cpu_freq_limits[CONFIG_NR_CPUS] = {0, 0, 0, 0};
+unsigned int tegra_pmqos_cpu_freq_limits_min[CONFIG_NR_CPUS] = {0, 0, 0, 0};
 
 /* tegra throttling and edp governors require frequencies in the table
    to be in ascending order */
@@ -251,8 +271,81 @@ static unsigned int user_cap_speed(unsigned int requested_speed)
 	return requested_speed;
 }
 
-=======
-#define powersave_speed(requested_speed) (requested_speed)
+static unsigned int pmqos_cap_speed(unsigned int requested_speed)
+{
+	unsigned int ret = requested_speed;
+	if(pm_qos_request(PM_QOS_CPU_FREQ_MIN) > requested_speed)
+	{
+		ret = pm_qos_request(PM_QOS_CPU_FREQ_MIN);
+	}
+	if(pm_qos_request(PM_QOS_CPU_FREQ_MAX) < requested_speed)
+	{
+		ret =  pm_qos_request(PM_QOS_CPU_FREQ_MAX);
+	}
+	return ret;
+}
+
+static int ril_boost = 0;
+
+static int ril_boost_set(const char *arg, const struct kernel_param *kp)
+{
+	return schedule_work(&ril_suspend_resume_work);
+}
+
+static int ril_boost_get(char *buffer, const struct kernel_param *kp)
+{
+	return param_get_uint(buffer, kp);
+}
+
+static struct kernel_param_ops ril_boost_ops = {
+	.set = ril_boost_set,
+	.get = ril_boost_get,
+};
+
+module_param_cb(ril_boost, &ril_boost_ops, &ril_boost, 0644);
+
+static int perf_early_suspend = 0;
+
+static int perf_early_suspend_set(const char *arg, const struct kernel_param *kp)
+{
+	pr_info("perf_early_suspend not supported\n");
+
+	return 0;
+}
+
+static int perf_early_suspend_get(char *buffer, const struct kernel_param *kp)
+{
+	return 0;
+}
+static struct kernel_param_ops perf_early_suspend_ops = {
+	.set = perf_early_suspend_set,
+	.get = perf_early_suspend_get,
+};
+
+module_param_cb(perf_early_suspend, &perf_early_suspend_ops, &perf_early_suspend, 0644);
+
+#ifdef CONFIG_TEGRA3_VARIANT_CPU_OVERCLOCK
+static int enable_oc_set(const char *arg, const struct kernel_param *kp)
+{
+    int ret = param_set_int(arg, kp);
+	if (ret)
+		return ret;
+    pr_info("enable_oc %d\n", enable_oc);
+	return 0;
+}
+
+static int enable_oc_get(char *buffer, const struct kernel_param *kp)
+{
+	return param_get_uint(buffer, kp);
+}
+
+static struct kernel_param_ops enable_oc_ops = {
+	.set = enable_oc_set,
+	.get = enable_oc_get,
+};
+
+module_param_cb(enable_oc, &enable_oc_ops, &enable_oc, 0644);
+#endif
 
 /* disable edp limitations */
 static unsigned int no_edp_limit = 0;
