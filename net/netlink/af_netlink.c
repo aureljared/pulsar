@@ -1662,7 +1662,6 @@ static int netlink_dump(struct sock *sk)
 	struct netlink_callback *cb;
 	struct sk_buff *skb = NULL;
 	struct nlmsghdr *nlh;
-	struct module *module;
 	int len, err = -ENOBUFS;
 	int alloc_size;
 
@@ -1712,11 +1711,8 @@ static int netlink_dump(struct sock *sk)
 	if (cb->done)
 		cb->done(cb);
 	nlk->cb = NULL;
-	module = cb->module;
-	sk = cb->skb;
 	mutex_unlock(nlk->cb_mutex);
-    module_put(module);
-    consume_skb(skb);
+
 	netlink_destroy_callback(cb);
 	return 0;
 
