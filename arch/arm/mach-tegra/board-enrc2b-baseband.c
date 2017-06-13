@@ -187,7 +187,7 @@ static void baseband_phy_on(void)
 				/* poll phy_restore_gpio high */
 				if (gpio_get_value(MDM2AP_ACK2))
 					break;
-				msleep(50);
+				msleep_interruptible(50);
 				retry--;
 			}
 

@@ -1710,7 +1710,7 @@ static void utmi_phy_restore_end(struct tegra_usb_phy *phy)
 		} while (val & (USB_PORTSC_RESUME | USB_PORTSC_SUSP));
 
 		/* wait for 25 ms to port resume complete */
-		msleep(25);
+		msleep_interruptible(25);
 		/* disable PMC master control */
 		utmip_phy_disable_pmc_bus_ctrl(phy);
 
@@ -2137,7 +2137,7 @@ static void uhsic_phy_restore_end(struct tegra_usb_phy *phy)
 		} while (val & (USB_PORTSC_RESUME | USB_PORTSC_SUSP));
 
 		/* wait for 25 ms to port resume complete */
-		msleep(25);
+		msleep_interruptible(25);
 		/* disable PMC master control */
 		uhsic_phy_disable_pmc_bus_ctrl(phy);
 

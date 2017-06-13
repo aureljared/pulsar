@@ -450,7 +450,7 @@ int headset_get_type_sync(int count, unsigned int interval)
 		if (new_type != current_type)
 			break;
 		if (count)
-			msleep(interval);
+			msleep_interruptible(interval);
 	}
 
 	if (new_type != current_type) {
@@ -795,7 +795,7 @@ static void debug_work_func(struct work_struct *work)
 			hs_mgr_notifier.remote_adc(&adc);
 		HS_LOG("Debug Flag %d, HP_DET %d, ADC %d", flag,
 		       hpin_gpio, adc);
-		msleep(HS_DELAY_SEC);
+		msleep_interruptible(HS_DELAY_SEC);
 	}
 }
 

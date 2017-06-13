@@ -369,7 +369,7 @@ else
 
 	for (i = MDM_HOLD_TIME; i > 0; i -= MDM_MODEM_DELTA) {
 		//pet_watchdog();
-		msleep(MDM_MODEM_DELTA);
+		msleep_interruptible(MDM_MODEM_DELTA);
 	}
 }
 #endif

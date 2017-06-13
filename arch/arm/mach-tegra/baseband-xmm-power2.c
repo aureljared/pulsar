@@ -560,7 +560,7 @@ static void baseband_xmm_power2_flashless_pm_ver_ge_1130_step3
 	/* polling enumeration every 100msec up to 3sec */
 	for(loop = 0; (loop < loop_max)&&(enum_success == 0); loop++) {
 		/* wait 100 ms */
-		msleep(100);
+		msleep_interruptible(100);
 
 		/* check if enumeration succeeded */
 		{
@@ -650,7 +650,7 @@ static void baseband_xmm_power2_flashless_pm_ver_ge_1130_step4
 	/* polling enumeration every 100msec up to 3sec */
 	for(loop = 1; (loop < loop_max)&&(enum_success == 0); loop++) {
 		/* wait 100 ms */
-		msleep(100);
+		msleep_interruptible(100);
 
 		/* check if enumeration succeeded */
 		{

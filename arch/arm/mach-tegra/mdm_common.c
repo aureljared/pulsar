@@ -667,7 +667,7 @@ static void mdm_fatal_fn(struct work_struct *work)
 
 		//wait until mdm_hsic_phy is not suspended, at most 10 seconds
 		for (i = 0; i < 100; i++) {
-			msleep(100);
+			msleep_interruptible(1000);
 			if (!is_mdm_hsic_phy_suspended && !is_mdm_hsic_wakeup_in_progress)
 				break;
 		}
