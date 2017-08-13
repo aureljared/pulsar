@@ -369,7 +369,8 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security -Wno-tautological-compare \
-		   -fno-delete-null-pointer-checks -Wno-error=unused-const-variable=
+		   -fno-delete-null-pointer-checks -Wno-error=unused-const-variable= \
+		   -Wno-error=format-overflow=
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
