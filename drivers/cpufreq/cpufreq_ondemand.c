@@ -31,12 +31,6 @@
 #include <linux/kthread.h>
 #include <linux/clk.h>
 
-/* Google systrace just supports Interactive governor (option -l)
- * Just backport Interactive trace points for Ondemand governor use
- */
-#define CREATE_TRACE_POINTS
-#include <trace/events/cpufreq_interactive.h>
-
 #include "../../arch/arm/mach-tegra/clock.h"
 #include "../../arch/arm/mach-tegra/pm.h"
 
