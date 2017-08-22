@@ -86,7 +86,7 @@ static unsigned long go_hispeed_load = DEFAULT_GO_HISPEED_LOAD;
 static unsigned int default_target_loads[] = {DEFAULT_TARGET_LOAD};
 static spinlock_t target_loads_lock;
 static unsigned int *target_loads = default_target_loads;
-static int ntarget_loads = ARRAY_SIZE(default_target_loads)
+static int ntarget_loads = ARRAY_SIZE(default_target_loads);
 
 /*
  * The minimum amount of time to spend at a frequency before we can ramp down.
@@ -784,7 +784,7 @@ static struct notifier_block cpufreq_notifier_block = {
     .notifier_call = cpufreq_interactive_notifier,
 };
 
-+static unsigned int *get_tokenized_data(const char *buf, int *num_tokens)
+static unsigned int *get_tokenized_data(const char *buf, int *num_tokens)
 {
     const char *cp;
     int i;
