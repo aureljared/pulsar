@@ -78,7 +78,7 @@ static struct mutex gov_lock;
 static unsigned int hispeed_freq;
 
 /* Go to hi speed when CPU load at or above this value. */
-#define DEFAULT_GO_HISPEED_LOAD 99
+#define DEFAULT_GO_HISPEED_LOAD 85
 static unsigned long go_hispeed_load = DEFAULT_GO_HISPEED_LOAD;
 
 /* Target load.  Lower values result in higher CPU speeds. */
@@ -91,13 +91,13 @@ static int ntarget_loads = ARRAY_SIZE(default_target_loads);
 /*
  * The minimum amount of time to spend at a frequency before we can ramp down.
  */
-#define DEFAULT_MIN_SAMPLE_TIME (80 * USEC_PER_MSEC)
+#define DEFAULT_MIN_SAMPLE_TIME 30000
 static unsigned long min_sample_time = DEFAULT_MIN_SAMPLE_TIME;
 
 /*
  * The sample rate of the timer used to increase frequency
  */
-#define DEFAULT_TIMER_RATE (20 * USEC_PER_MSEC)
+#define DEFAULT_TIMER_RATE 10000
 static unsigned long timer_rate = DEFAULT_TIMER_RATE;
 
 /*
@@ -119,7 +119,7 @@ static int boostpulse_duration_val = DEFAULT_BOOSTPULSE_DURATION;
  * The CPU will be boosted to this frequency when the screen is
  * touched. input_boost needs to be enabled.
  */
-#define DEFAULT_INPUT_BOOST_FREQ 910000
+#define DEFAULT_INPUT_BOOST_FREQ 1300000
 int input_boost_freq = DEFAULT_INPUT_BOOST_FREQ;
 
 /*
@@ -136,7 +136,7 @@ int input_boost_freq = DEFAULT_INPUT_BOOST_FREQ;
  * Max additional time to wait in idle, beyond timer_rate, at speeds above
  * minimum before wakeup to reduce speed, or -1 if unnecessary.
  */
-#define DEFAULT_TIMER_SLACK (4 * DEFAULT_TIMER_RATE)
+#define DEFAULT_TIMER_SLACK -1
 static int timer_slack_val = DEFAULT_TIMER_SLACK;
 
 /*
@@ -144,7 +144,7 @@ static int timer_slack_val = DEFAULT_TIMER_SLACK;
  * use_sched_load is true, this flag is ignored and windows
  * will always be aligned.
  */
-static bool align_windows = true;
+static bool align_windows = false;
 
 /*
  * Stay at max freq for at least max_freq_hysteresis before dropping
