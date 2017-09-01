@@ -166,8 +166,8 @@ sha384_init(struct shash_desc *desc)
 	return 0;
 }
 
-static int
-sha512_update(struct shash_desc *desc, const u8 *data, unsigned int len)
+int sha512_update(struct shash_desc *desc, const u8 *data,
+            unsigned int len)
 {
 	struct sha512_state *sctx = shash_desc_ctx(desc);
 
@@ -200,6 +200,7 @@ sha512_update(struct shash_desc *desc, const u8 *data, unsigned int len)
 
 	return 0;
 }
+EXPORT_SYMBOL(sha512_update);
 
 static int
 sha512_final(struct shash_desc *desc, u8 *hash)
