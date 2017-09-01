@@ -4921,8 +4921,6 @@ static int clip_cpu_rate_limits(
 			T3_SUSPEND_FREQ * 1000, ret ? "outside" : "at the bottom");
 		return ret;
 	}
-	//faux123 debug
-	pr_info("CPU Freq LP Index: %i\n", idx);
 
 #ifdef CONFIG_TEGRA3_LP_CORE_OVERDRIVE
 	idx = 5;
