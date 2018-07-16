@@ -1379,7 +1379,7 @@ int sock_create_kern(int family, int type, int protocol, struct socket **res)
 }
 EXPORT_SYMBOL(sock_create_kern);
 
-SYSCALL_DEFINE3(socket, int, family, int, type, int, protocol)
+static int do_socket(struct net *net, int family, int type, int protocol)
 {
 	int retval;
 	struct socket *sock;
@@ -1399,7 +1399,7 @@ SYSCALL_DEFINE3(socket, int, family, int, type, int, protocol)
 	if (SOCK_NONBLOCK != O_NONBLOCK && (flags & SOCK_NONBLOCK))
 		flags = (flags & ~SOCK_NONBLOCK) | O_NONBLOCK;
 
-	retval = sock_create(family, type, protocol, &sock);
+	retval = __sock_create(net, family, type, protocol, &sock, 0);
 	if (retval < 0)
 		goto out;
 
@@ -1413,6 +1413,28 @@ out:
 
 out_release:
 	sock_release(sock);
+	return retval;
+}
+
+SYSCALL_DEFINE3(socket, int, family, int, type, int, protocol)
+{
+	return do_socket(current->nsproxy->net_ns, family, type, protocol);
+}
+
+SYSCALL_DEFINE4(socketat, int, fd, int, family, int, type, int, protocol)
+{
+	struct net *net;
+	int retval;
+
+	if (fd == -1) {
+		net = get_net(current->nsproxy->net_ns);
+	} else {
+		net = get_net_ns_by_fd(fd);
+		if (IS_ERR(net))
+			return PTR_ERR(net);
+	}
+	retval = do_socket(net, family, type, protocol);
+	put_net(net);
 	return retval;
 }
 
