@@ -112,4 +112,9 @@ all.config
 
 # Kdevelop4
 *.kdev4
+
+# Other generated files
 include/linux/version.h
+arch/arm/boot/compressed/ashldi3.S
+arch/arm/boot/compressed/piggy.xzkern
+kernel/hz.bc
