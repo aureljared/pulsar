@@ -2,13 +2,13 @@
  * Linux cfg80211 driver
  *
  * Copyright (C) 1999-2012, Broadcom Corporation
- * 
+ *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
  * under the terms of the GNU General Public License version 2 (the "GPL"),
  * available at http://www.broadcom.com/licenses/GPLv2.php, with the
  * following added to such license:
- * 
+ *
  *      As a special exception, the copyright holders of this software give you
  * permission to link this software with independent modules, and to copy and
  * distribute the resulting executable under terms of your choice, provided that
@@ -16,7 +16,7 @@
  * the license of that module.  An independent module is a module which is not
  * derived from this software.  The special exception does not apply to any
  * modifications of the software.
- * 
+ *
  *      Notwithstanding the above, under no circumstances may you combine this
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
@@ -1898,13 +1898,13 @@ void wl_cfg_stop_scansuppress(struct work_struct *work)
 	struct net_device *netdev;
 
 	wl = wlcfg_drv_priv;
-	
+
 	if (!wl) {
 		printf("%s: wl is null\n", __FUNCTION__);
 	}
-	
+
 	netdev = wl->wdev->netdev;
-	
+
 	if (!netdev) {
 		printf("%s: netdev is null\n", __FUNCTION__);
 	}
@@ -2414,7 +2414,7 @@ scan_out:
 
 					/* notify wpa_supplicant the association abort */
 					wl_bss_connect_done(wl, ndev, NULL, NULL, false);
-                } else { 
+                } else {
 					wl_cfg80211_disconnect(wiphy, ndev, DOT11_RC_DISASSOC_LEAVING);
 				}
 				disconnect_flag = 1;
@@ -2877,7 +2877,7 @@ wl_set_key_mgmt(struct net_device *dev, struct cfg80211_connect_params *sme)
 					sme->crypto.cipher_group));
 				return -EINVAL;
 			}
-		} else if (val & (WPA2_AUTH_PSK | 
+		} else if (val & (WPA2_AUTH_PSK |
 #ifdef BCMCCX
 				WPA2_AUTH_CCKM |
 #endif
@@ -3303,7 +3303,7 @@ wl_cfg80211_connect(struct wiphy *wiphy, struct net_device *dev,
         bss_setbuf.cfg = 1;
         bss_setbuf.val = 0;  /* down the interface */
 
-        if ((res = wldev_iovar_setbuf_bsscfg(dev, "bss", &bss_setbuf, sizeof(bss_setbuf), 
+        if ((res = wldev_iovar_setbuf_bsscfg(dev, "bss", &bss_setbuf, sizeof(bss_setbuf),
             wl->ioctl_buf, WLC_IOCTL_MAXLEN, 1, &wl->ioctl_buf_sync)) < 0){
             WL_ERR(("%s: ERROR:%d, set bss up failed\n", __FUNCTION__, res));
         }
@@ -3890,7 +3890,7 @@ wl_cfg80211_get_station(struct wiphy *wiphy, struct net_device *dev,
 			sizeof(scb_val_t), false);
 		if (err) {
 			WL_ERR(("Could not get rssi (%d)\n", err));
-/* 2012-09-30 patch for link down cause by busy APSTA Traffic ++++ */			
+/* 2012-09-30 patch for link down cause by busy APSTA Traffic ++++ */
 			if(rssi_errcnt > 2)
 				goto get_station_err;
 			else{
@@ -3900,7 +3900,7 @@ wl_cfg80211_get_station(struct wiphy *wiphy, struct net_device *dev,
 				err = 0;
 				rssi_errcnt++;
 				return err;
-			}	
+			}
 		}else{
 			rssi_errcnt = 0;
 		}
@@ -3928,7 +3928,7 @@ get_station_err:
 		if (err && (err != -ERESTARTSYS)) {
 			/* Disconnect due to zero BSSID or error to get RSSI */
 			WL_ERR(("force cfg80211_disconnected\n"));
-/* 2012-09-30 patch for link down cause by busy APSTA Traffic ++++ */			
+/* 2012-09-30 patch for link down cause by busy APSTA Traffic ++++ */
 			rssi_errcnt = 0;
 			old_rssi = -1;
 /* 2012-09-30 patch for link down cause by busy APSTA Traffic ---- */
@@ -4597,6 +4597,11 @@ wl_cfg80211_mgmt_tx(struct wiphy *wiphy, struct net_device *ndev,
 			goto exit;
 
 		} else if (ieee80211_is_action(mgmt->frame_control)) {
+			if (len > ACTION_FRAME_SIZE + DOT11_MGMT_HDR_LEN) {
+				WL_ERR(("invalid action frame length\n"));
+				err = -EINVAL;
+				goto exit;
+			}
 			/* Abort the dwell time of any previous off-channel
 			* action frame that may be still in effect.  Sending
 			* off-channel action frames relies on the driver's
@@ -6085,7 +6090,7 @@ wl_cfg80211_add_set_beacon(struct wiphy *wiphy, struct net_device *dev,
 				used_default_ssid = 1;
 			}
 			/*HTC_CSP_END*/
-			memset(&ssid, 0, sizeof(wlc_ssid_t)); 
+			memset(&ssid, 0, sizeof(wlc_ssid_t));
 			/* HTC_CSP_START*/
 			if(ssid_ie != NULL && ssid_ie->len){
 				memcpy(ssid.SSID, ssid_ie->data, ssid_ie->len);
@@ -6096,8 +6101,8 @@ wl_cfg80211_add_set_beacon(struct wiphy *wiphy, struct net_device *dev,
 				memcpy(ssid.SSID, default_ssid, strlen(default_ssid));
 				ssid.SSID_len = strlen(default_ssid);
 				used_default_ssid = 0;
-				
-			}		
+
+			}
 			/* HTC_CSP_END*/
 
 			printf("SSID is (%s) in Head  , ssid.SSID_len[%d]\n", ssid.SSID,ssid.SSID_len);
@@ -6885,7 +6890,7 @@ wl_notify_connect_status(struct wl_priv *wl, struct net_device *ndev,
 						printf("%s Pass STA_AP_Chan Sanity Check\n",__FUNCTION__);
 					else{
 						if(ntoh32(e->event_type) == WLC_E_SET_SSID)
-							errcode = wldev_set_ssid(ndev,&errcode); 
+							errcode = wldev_set_ssid(ndev,&errcode);
 					}
 				}
 				#endif
@@ -8338,7 +8343,7 @@ static s32 wl_escan_handler(struct wl_priv *wl,
 		else
 		WL_ERR(("escan is not ready ndev %p wl->escan_on %d drv_status 0x%x\n",
 			ndev, wl->escan_on, wl_get_drv_status(wl, SCANNING, ndev)));
-		
+
 #else
 		WL_ERR(("escan is not ready ndev %p wl->escan_on %d drv_status 0x%x\n",
 			ndev, wl->escan_on, wl_get_drv_status(wl, SCANNING, ndev)));
@@ -8819,9 +8824,9 @@ static s32 wl_init_priv(struct wl_priv *wl)
 	init_completion(&wl->iface_disable);
 	wl_init_eq(wl);
 	err = wl_init_priv_mem(wl);
-	if (err) 
+	if (err)
 		goto wl_init_priv_fail;
-	
+
 	if (wl_create_event_handler(wl)) {
 		err = -ENOMEM;
 		goto wl_init_priv_fail1;
@@ -9036,7 +9041,7 @@ void wl_cfg80211_detach(void *para)
 
 #if defined(COEX_DHCP)
 	wl_cfg80211_btcoex_deinit(wl);
-#endif 
+#endif
 
 #if defined(WLP2P) && defined(WL_ENABLE_P2P_IF)
 	wl_cfg80211_detach_p2p();
@@ -9288,9 +9293,9 @@ wl_cfg80211_event(struct net_device *ndev, const wl_event_msg_t * e, void *data)
 		printf("DEAUTH received, %02X:%02X:%02X:%02X:%02X:%02X!, reason:%d\n",
 					macaddr[0], macaddr[1], macaddr[2], macaddr[3],
 					macaddr[4], macaddr[5], reason);
-		
+
 		curbssid = wl_read_prof(wl, ndev, WL_PROF_BSSID);
-		
+
 		if((wl_get_mode_by_netdev(wl, ndev) == WL_MODE_BSS) &&
 			   strncmp(curbssid,macaddr,ETHER_ADDR_LEN)){
 			printf("Rece Deauth from not connected bssid, skip it ndev_name[%s]!\n",ndev->name);
@@ -10330,7 +10335,7 @@ void wl_cfg80211_abort_connecting(void)
         /* notify wpa_supplicant the association abort */
         wl_bss_connect_done(wl, dev, NULL, NULL, false);
     }
-}		
+}
 // 2012-10-24 end
 
 //BRCM APSTA START
@@ -10341,7 +10346,7 @@ int wl_cfg80211_set_apsta_concurrent(struct net_device *dev, bool enable)
 	if (wl) {
 		printf("%s: setwl->apsta_concurrent=%d\n", __FUNCTION__, enable);
 		wl->apsta_concurrent = enable;
-		
+
 		/* make sure the CT3 is ok */
 	        if (wl_get_drv_status(wl, CONNECTING, dev)) {
                         int val = 0;
@@ -10356,7 +10361,7 @@ int wl_cfg80211_set_apsta_concurrent(struct net_device *dev, bool enable)
 
 			/* notify wpa_supplicant the association abort */
 			wl_bss_connect_done(wl, dev, NULL, NULL, false);
-           } 
+           }
     }
 
 	return 0;
