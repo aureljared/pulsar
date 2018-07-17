@@ -161,7 +161,7 @@ static unsigned int s2w_min_distance = 200;
 static bool s2w_allow_stroke = true;
 
 // double tap to wake
-static bool doubletap2wake = true;
+static bool doubletap2wake = false;
 
 // minimal duration between taps to be recognized
 static unsigned int s2w_double_tap_duration = 150; /* msecs */
@@ -177,9 +177,9 @@ static unsigned int s2w_double_tap_barrier_y = 0;
 // should the I2C sleep command be used on resume
 static bool s2w_resume_tweak_enabled = true;
 
-static bool s2w_pocket_detect = false; 
+static bool s2w_pocket_detect = false;
 
-static bool s2w_switch = true;
+static bool s2w_switch = false;
 static bool scr_suspended = false;
 static bool exec_count = true;
 static bool barrier = false;
@@ -1411,7 +1411,7 @@ static ssize_t synaptics_s2w_min_distance_dump(struct device *dev,
 	return count;
 }
 
-static DEVICE_ATTR(s2w_min_distance, (S_IWUSR|S_IRUGO), 
+static DEVICE_ATTR(s2w_min_distance, (S_IWUSR|S_IRUGO),
     synaptics_s2w_min_distance_show, synaptics_s2w_min_distance_dump);
 
 static ssize_t synaptics_s2w_register_threshold_show(struct device *dev,
@@ -1575,7 +1575,7 @@ static ssize_t synaptics_s2w_double_tap_duration_dump(struct device *dev,
 
 static DEVICE_ATTR(s2w_double_tap_duration, (S_IWUSR|S_IRUGO),
 	synaptics_s2w_double_tap_duration_show, synaptics_s2w_double_tap_duration_dump);
-	
+
 static ssize_t synaptics_s2w_double_tap_threshold_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -1607,7 +1607,7 @@ static ssize_t synaptics_s2w_double_tap_threshold_dump(struct device *dev,
 }
 
 static DEVICE_ATTR(s2w_double_tap_threshold, (S_IWUSR|S_IRUGO),
-	synaptics_s2w_double_tap_threshold_show, synaptics_s2w_double_tap_threshold_dump);	
+	synaptics_s2w_double_tap_threshold_show, synaptics_s2w_double_tap_threshold_dump);
 
 static ssize_t synaptics_s2w_double_tap_barrier_y_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -1731,14 +1731,14 @@ static ssize_t synaptics_calibration_control_dump(struct device *dev,
         calibration_control = false;
     else if (value == 1)
         calibration_control = true;
-    
+
     printk(KERN_INFO "[TP]: calibration_control - %d", calibration_control);
     return count;
 }
 
 static DEVICE_ATTR(calibration_control, (S_IWUSR|S_IRUGO),
 	synaptics_calibration_control_show, synaptics_calibration_control_dump);
-	
+
 static struct kobject *android_touch_kobj;
 
 static int synaptics_touch_sysfs_init(void)
@@ -1775,7 +1775,7 @@ static int synaptics_touch_sysfs_init(void)
         sysfs_create_file(android_touch_kobj, &dev_attr_s2w_register_threshold.attr) ||
         sysfs_create_file(android_touch_kobj, &dev_attr_s2w_min_distance.attr) ||
         sysfs_create_file(android_touch_kobj, &dev_attr_doubletap2wake.attr) ||
-        sysfs_create_file(android_touch_kobj, &dev_attr_s2w_double_tap_duration.attr) ||        
+        sysfs_create_file(android_touch_kobj, &dev_attr_s2w_double_tap_duration.attr) ||
         sysfs_create_file(android_touch_kobj, &dev_attr_s2w_double_tap_threshold.attr) ||
         sysfs_create_file(android_touch_kobj, &dev_attr_s2w_double_tap_barrier_y.attr) ||
         sysfs_create_file(android_touch_kobj, &dev_attr_s2w_resume_tweak_enabled.attr) ||
@@ -1810,8 +1810,8 @@ static void synaptics_touch_sysfs_remove(void)
 	sysfs_remove_file(android_touch_kobj, &dev_attr_s2w_double_tap_duration.attr);
 	sysfs_remove_file(android_touch_kobj, &dev_attr_s2w_double_tap_threshold.attr);
 	sysfs_remove_file(android_touch_kobj, &dev_attr_s2w_double_tap_barrier_y.attr);
-	sysfs_remove_file(android_touch_kobj, &dev_attr_s2w_resume_tweak_enabled.attr);	
-	sysfs_remove_file(android_touch_kobj, &dev_attr_s2w_pocket_detect.attr);	
+	sysfs_remove_file(android_touch_kobj, &dev_attr_s2w_resume_tweak_enabled.attr);
+	sysfs_remove_file(android_touch_kobj, &dev_attr_s2w_pocket_detect.attr);
 #endif
 	kobject_del(android_touch_kobj);
 }
@@ -1929,7 +1929,7 @@ static void synaptics_fill_finger_data(struct synaptics_ts_data *ts, uint8_t *bu
 
 			if (ts->layout[1] < finger_data[i][0])
 				finger_data[i][0] = ts->layout[1];
-		}	
+		}
 		base += 5;
 	}
 }
@@ -1940,7 +1940,7 @@ static bool synaptics_s2w_handle_move(int downx, int finger_data_x)
 	// lock panel to s2w after this distance
 	if(abs(downx - finger_data_x) > s2w_register_threshold)
     	barrier = true;
-                      
+
 	// handle after distance travelled
 	if(abs(downx - finger_data_x) > s2w_min_distance)
 		return true;
@@ -1972,7 +1972,7 @@ static void synaptics_ts_finger_func(struct synaptics_ts_data *ts)
   // -1 = not touched; -2 = touched on screen; >=0 = touched on button panel
 	static int downx = -1;
 #endif
-	
+
     if(touchDebug)
         printk(KERN_INFO "[TP] Finger event\n");
 
@@ -2075,7 +2075,7 @@ static void synaptics_ts_finger_func(struct synaptics_ts_data *ts)
 					}
 
 					s2w_double_tap_start = now;
-					
+
 					if (diff > tapTime && diff < tooLongTime){
 						synaptics_s2w_turn_on();
 						return;
@@ -2196,8 +2196,8 @@ static void synaptics_ts_finger_func(struct synaptics_ts_data *ts)
 							int finger_x = finger_data[0][0];
 
 							if(touchDebug)
-								pr_info(S2W_TAG "current x=%d y=%d downx=%d\n", 
-									finger_x, finger_y, downx);						
+								pr_info(S2W_TAG "current x=%d y=%d downx=%d\n",
+									finger_x, finger_y, downx);
 
 							if (finger_y > 1780){
 								if(downx == -1){
@@ -2220,7 +2220,7 @@ static void synaptics_ts_finger_func(struct synaptics_ts_data *ts)
 										}
 									} else {
 										// Free swipe - single direction activation
-										//left->right	
+										//left->right
 										if (scr_suspended) {
 											if(finger_x > downx){
 												if (synaptics_s2w_handle_move(downx, finger_x)){
@@ -2248,13 +2248,13 @@ static void synaptics_ts_finger_func(struct synaptics_ts_data *ts)
 							} else {
 								// this prevents swipes originating on screen and then
 								// entering button panel to affect s2w (gaming etc.)
-								downx = -2; 
+								downx = -2;
 							}
 						}
-						
+
 						if(!mode){
 							if(touchDebug)
-								pr_info(S2W_TAG "suspended - ignoring other events\n");						
+								pr_info(S2W_TAG "suspended - ignoring other events\n");
 							break;
 						} else {
 							if (barrier){
@@ -2858,7 +2858,7 @@ static int synaptics_ts_probe(
 	}
 
     //Wait for signal stable after touch power on
-    msleep(80); 
+    msleep(80);
 
 	ret = i2c_syn_read(ts->client, 0x00EE, &data, 1);
 	if (ret < 0) {
@@ -3213,7 +3213,7 @@ static int synaptics_ts_suspend(struct i2c_client *client, pm_message_t mesg)
 	if (ts->use_irq) {
 #ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_SWEEP2WAKE
 		if (!s2w_active()) {
-#endif		
+#endif
 			disable_irq(client->irq);
 			ts->irq_enabled = 0;
 #ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_SWEEP2WAKE
@@ -3402,8 +3402,8 @@ static int synaptics_ts_resume(struct i2c_client *client)
 	}
 
 	ts->psensor_resume_enable = 0;
-	
-	// no need to mess with psensor if we dont need 
+
+	// no need to mess with psensor if we dont need
 	// calibration anyway
 	if(ts->psensor_detection) {
 		if (ts->packrat_number < SYNAPTICS_FW_NOCAL_PACKRAT) {
