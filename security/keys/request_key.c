@@ -54,7 +54,7 @@ void complete_request_key(struct key_construction *cons, int error)
 
 	if (error < 0)
 		key_negate_and_link(cons->key, key_negative_timeout, NULL,
-				    cons->authkey);
+					cons->authkey);
 	else
 		key_revoke(cons->authkey);
 
@@ -190,12 +190,12 @@ static int call_sbin_request_key(struct key_construction *cons,
 
 	/* do it */
 	ret = call_usermodehelper_keys(argv[0], argv, envp, keyring,
-				       UMH_WAIT_PROC);
+					   UMH_WAIT_PROC);
 	kdebug("usermode -> 0x%x", ret);
 	if (ret >= 0) {
 		/* ret is the exit/wait code */
 		if (test_bit(KEY_FLAG_USER_CONSTRUCT, &key->flags) ||
-		    key_validate(key) < 0)
+			key_validate(key) < 0)
 			ret = -ENOKEY;
 		else
 			/* ignore any errors from userspace if the key was
@@ -234,7 +234,7 @@ static int construct_key(struct key *key, const void *callout_info,
 
 	/* allocate an authorisation key */
 	authkey = request_key_auth_new(key, callout_info, callout_len,
-				       dest_keyring);
+					   dest_keyring);
 	if (IS_ERR(authkey)) {
 		kfree(cons);
 		ret = PTR_ERR(authkey);
@@ -267,11 +267,12 @@ static int construct_key(struct key *key, const void *callout_info,
  * The keyring selected is returned with an extra reference upon it which the
  * caller must release.
  */
-static void construct_get_dest_keyring(struct key **_dest_keyring)
+static int construct_get_dest_keyring(struct key **_dest_keyring)
 {
 	struct request_key_auth *rka;
 	const struct cred *cred = current_cred();
 	struct key *dest_keyring = *_dest_keyring, *authkey;
+	int ret;
 
 	kenter("%p", dest_keyring);
 
@@ -280,6 +281,8 @@ static void construct_get_dest_keyring(struct key **_dest_keyring)
 		/* the caller supplied one */
 		key_get(dest_keyring);
 	} else {
+		bool do_perm_check = true;
+
 		/* use a default keyring; falling through the cases until we
 		 * find one that we actually have */
 		switch (cred->jit_keyring) {
@@ -290,12 +293,14 @@ static void construct_get_dest_keyring(struct key **_dest_keyring)
 				down_read(&authkey->sem);
 				rka = authkey->payload.data;
 				if (!test_bit(KEY_FLAG_REVOKED,
-					      &authkey->flags))
+						  &authkey->flags))
 					dest_keyring =
 						key_get(rka->dest_keyring);
 				up_read(&authkey->sem);
-				if (dest_keyring)
+				if (dest_keyring) {
+					do_perm_check = false;
 					break;
+				}
 			}
 
 		case KEY_REQKEY_DEFL_THREAD_KEYRING:
@@ -330,11 +335,30 @@ static void construct_get_dest_keyring(struct key **_dest_keyring)
 		default:
 			BUG();
 		}
+
+
+		/*
+		 * Require Write permission on the keyring.  This is essential
+		 * because the default keyring may be the session keyring, and
+		 * joining a keyring only requires Search permission.
+		 *
+		 * However, this check is skipped for the "requestor keyring" so
+		 * that /sbin/request-key can itself use request_key() to add
+		 * keys to the original requestor's destination keyring.
+		 */
+		if (dest_keyring && do_perm_check) {
+			ret = key_permission(make_key_ref(dest_keyring, 1),
+				KEY_NEED_WRITE);
+			if (ret) {
+				key_put(dest_keyring);
+				return ret;
+			}
+		}
 	}
 
 	*_dest_keyring = dest_keyring;
 	kleave(" [dk %d]", key_serial(dest_keyring));
-	return;
+	return 0;
 }
 
 /*
@@ -345,11 +369,11 @@ static void construct_get_dest_keyring(struct key **_dest_keyring)
  * race between two thread calling request_key().
  */
 static int construct_alloc_key(struct key_type *type,
-			       const char *description,
-			       struct key *dest_keyring,
-			       unsigned long flags,
-			       struct key_user *user,
-			       struct key **_key)
+				   const char *description,
+				   struct key *dest_keyring,
+				   unsigned long flags,
+				   struct key_user *user,
+				   struct key **_key)
 {
 	const struct cred *cred = current_cred();
 	unsigned long prealloc;
@@ -371,7 +395,7 @@ static int construct_alloc_key(struct key_type *type,
 
 	if (dest_keyring) {
 		ret = __key_link_begin(dest_keyring, type, description,
-				       &prealloc);
+					   &prealloc);
 		if (ret < 0)
 			goto link_prealloc_failed;
 	}
@@ -449,11 +473,15 @@ static struct key *construct_key_and_link(struct key_type *type,
 
 	kenter("");
 
-	user = key_user_lookup(current_fsuid(), current_user_ns());
-	if (!user)
-		return ERR_PTR(-ENOMEM);
+	ret = construct_get_dest_keyring(&dest_keyring);
+	if (ret)
+		goto error;
 
-	construct_get_dest_keyring(&dest_keyring);
+	user = key_user_lookup(current_fsuid(), current_user_ns());
+	if (!user) {
+		ret = -ENOMEM;
+		goto error_put_dest_keyring;
+	}
 
 	ret = construct_alloc_key(type, description, dest_keyring, flags, user,
 				  &key);
@@ -461,7 +489,7 @@ static struct key *construct_key_and_link(struct key_type *type,
 
 	if (ret == 0) {
 		ret = construct_key(key, callout_info, callout_len, aux,
-				    dest_keyring);
+					dest_keyring);
 		if (ret < 0) {
 			kdebug("cons failed");
 			goto construction_failed;
@@ -469,7 +497,7 @@ static struct key *construct_key_and_link(struct key_type *type,
 	} else if (ret == -EINPROGRESS) {
 		ret = 0;
 	} else {
-		goto couldnt_alloc_key;
+		goto error_put_dest_keyring;
 	}
 
 	key_put(dest_keyring);
@@ -479,8 +507,9 @@ static struct key *construct_key_and_link(struct key_type *type,
 construction_failed:
 	key_negate_and_link(key, key_negative_timeout, NULL, NULL);
 	key_put(key);
-couldnt_alloc_key:
+error_put_dest_keyring:
 	key_put(dest_keyring);
+error:
 	kleave(" = %d", ret);
 	return ERR_PTR(ret);
 }
@@ -526,8 +555,8 @@ struct key *request_key_and_link(struct key_type *type,
 	int ret;
 
 	kenter("%s,%s,%p,%zu,%p,%p,%lx",
-	       type->name, description, callout_info, callout_len, aux,
-	       dest_keyring, flags);
+		   type->name, description, callout_info, callout_len, aux,
+		   dest_keyring, flags);
 
 	/* search all the process keyrings for a key */
 	key_ref = search_process_keyrings(type, description, type->match, cred);
@@ -554,8 +583,8 @@ struct key *request_key_and_link(struct key_type *type,
 			goto error;
 
 		key = construct_key_and_link(type, description, callout_info,
-					     callout_len, aux, dest_keyring,
-					     flags);
+						 callout_len, aux, dest_keyring,
+						 flags);
 	}
 
 error:
@@ -641,10 +670,10 @@ EXPORT_SYMBOL(request_key);
  * completion of keys undergoing construction with a non-interruptible wait.
  */
 struct key *request_key_with_auxdata(struct key_type *type,
-				     const char *description,
-				     const void *callout_info,
-				     size_t callout_len,
-				     void *aux)
+					 const char *description,
+					 const void *callout_info,
+					 size_t callout_len,
+					 void *aux)
 {
 	struct key *key;
 	int ret;
@@ -677,13 +706,13 @@ EXPORT_SYMBOL(request_key_with_auxdata);
  * completion of the returned key if it is still undergoing construction.
  */
 struct key *request_key_async(struct key_type *type,
-			      const char *description,
-			      const void *callout_info,
-			      size_t callout_len)
+				  const char *description,
+				  const void *callout_info,
+				  size_t callout_len)
 {
 	return request_key_and_link(type, description, callout_info,
-				    callout_len, NULL, NULL,
-				    KEY_ALLOC_IN_QUOTA);
+					callout_len, NULL, NULL,
+					KEY_ALLOC_IN_QUOTA);
 }
 EXPORT_SYMBOL(request_key_async);
 
@@ -708,6 +737,6 @@ struct key *request_key_async_with_auxdata(struct key_type *type,
 					   void *aux)
 {
 	return request_key_and_link(type, description, callout_info,
-				    callout_len, aux, NULL, KEY_ALLOC_IN_QUOTA);
+					callout_len, aux, NULL, KEY_ALLOC_IN_QUOTA);
 }
 EXPORT_SYMBOL(request_key_async_with_auxdata);
